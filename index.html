@@ -1,0 +1,654 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ミニトマト部会 出荷・単価ダッシュボード(モック)</title>
+<style>
+  :root{
+    --ink:#232323;
+    --sub:#6f6f6f;
+    --line:#e3e2df;
+    --paper:#ffffff;
+    --floor:#faf9f7;
+    --vine:#4c7a52;
+    --vine-deep:#33583a;
+    --tomato:#c94a3c;
+    --tomato-deep:#a63a2f;
+    --sat:#2f6fb0;
+    --sat-bg:#eaf2fa;
+    --hol:#c94a3c;
+    --hol-bg:#fbebe9;
+    --warn:#c8862c;
+    --warn-bg:#fbf1e1;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:#efeee9;
+    font-family:"Hiragino Sans","Yu Gothic UI","BIZ UDPGothic",system-ui,-apple-system,sans-serif;
+    color:var(--ink);
+    -webkit-font-smoothing:antialiased;
+  }
+  .phone{
+    max-width:428px;
+    margin:0 auto;
+    background:var(--paper);
+    min-height:100vh;
+    box-shadow:0 0 40px rgba(0,0,0,0.12);
+    padding-bottom:40px;
+  }
+
+  /* ---------- Header ---------- */
+  .topbar{
+    padding:14px 16px 0 16px;
+    position:sticky;
+    top:0;
+    background:var(--paper);
+    z-index:20;
+    border-bottom:1px solid var(--line);
+  }
+  .brandrow{
+    display:flex;
+    align-items:baseline;
+    justify-content:space-between;
+    margin-bottom:10px;
+  }
+  .brand{
+    font-size:15px;
+    font-weight:700;
+    letter-spacing:.02em;
+  }
+  .brand .dot{
+    display:inline-block;
+    width:7px;height:7px;
+    border-radius:50%;
+    background:var(--tomato);
+    margin-right:6px;
+    vertical-align:middle;
+  }
+  .asof{
+    font-size:10.5px;
+    color:var(--sub);
+  }
+
+  .tabs{
+    display:flex;
+    gap:0;
+    margin-top:2px;
+  }
+  .tab{
+    flex:1;
+    text-align:center;
+    padding:10px 0 12px 0;
+    font-size:14px;
+    font-weight:700;
+    color:var(--sub);
+    border-bottom:3px solid transparent;
+    background:none;
+    border-left:none;border-right:none;border-top:none;
+    font-family:inherit;
+  }
+  .tab.active{
+    color:var(--vine-deep);
+    border-bottom:3px solid var(--vine);
+  }
+
+  .subrow{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    padding:10px 16px;
+    gap:10px;
+  }
+  select.pack{
+    font-family:inherit;
+    font-size:13.5px;
+    font-weight:700;
+    color:var(--ink);
+    background:var(--floor);
+    border:1px solid var(--line);
+    border-radius:8px;
+    padding:7px 10px;
+  }
+  .updated-pill{
+    font-size:10.5px;
+    color:var(--vine-deep);
+    background:#eef4ee;
+    border:1px solid #cfe1d1;
+    border-radius:20px;
+    padding:3px 9px;
+    white-space:nowrap;
+  }
+
+  /* ---------- Date strip ---------- */
+  .datestrip-wrap{
+    padding:2px 0 12px 0;
+    border-bottom:1px solid var(--line);
+  }
+  .datestrip{
+    display:flex;
+    gap:7px;
+    overflow-x:auto;
+    padding:2px 16px;
+    scrollbar-width:none;
+  }
+  .datestrip::-webkit-scrollbar{display:none;}
+  .datepill{
+    flex:0 0 auto;
+    width:46px;
+    padding:6px 0 7px 0;
+    border-radius:12px;
+    text-align:center;
+    border:1px solid var(--line);
+    background:var(--paper);
+  }
+  .datepill .wd{font-size:10px;font-weight:700;}
+  .datepill .dn{font-size:15px;font-weight:700;margin-top:2px;}
+  .datepill.sat{border-color:#cfe0ef;background:var(--sat-bg);}
+  .datepill.sat .wd, .datepill.sat .dn{color:var(--sat);}
+  .datepill.hol{border-color:#f0d3ce;background:var(--hol-bg);}
+  .datepill.hol .wd, .datepill.hol .dn{color:var(--hol);}
+  .datepill.sel{
+    background:var(--vine-deep);
+    border-color:var(--vine-deep);
+  }
+  .datepill.sel .wd, .datepill.sel .dn{color:#fff;}
+
+  .jumprow{
+    display:flex;
+    gap:8px;
+    padding:8px 16px 0 16px;
+  }
+  .jumpbtn{
+    flex:1;
+    font-family:inherit;
+    font-size:12px;
+    font-weight:700;
+    color:var(--vine-deep);
+    background:#f2f6f2;
+    border:1px solid #dbe6db;
+    border-radius:8px;
+    padding:8px 0;
+  }
+
+  /* ---------- Section labels ---------- */
+  .section{
+    padding:16px 16px 4px 16px;
+  }
+  .section-title{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    font-size:13px;
+    font-weight:700;
+    color:var(--ink);
+    margin-bottom:2px;
+  }
+  .section-title .bar{
+    width:4px;height:14px;background:var(--tomato);border-radius:2px;
+  }
+  .section-note{
+    font-size:11px;
+    color:var(--sub);
+    margin:2px 0 10px 12px;
+  }
+
+  /* ---------- Market cards ---------- */
+  .market-card{
+    border:1px solid var(--line);
+    border-radius:12px;
+    margin:0 16px 10px 16px;
+    overflow:hidden;
+  }
+  .market-head{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    padding:9px 12px;
+    background:var(--floor);
+    border-bottom:1px solid var(--line);
+  }
+  .market-name{
+    font-size:13.5px;
+    font-weight:700;
+  }
+  .yoy{
+    font-size:11px;
+    font-weight:700;
+    display:flex;
+    align-items:center;
+    gap:3px;
+  }
+  .yoy.up{color:var(--vine-deep);}
+  .yoy.down{color:var(--sub);}
+  .price-grid{
+    display:grid;
+    grid-template-columns:repeat(5,1fr);
+  }
+  .cell{
+    padding:8px 2px 9px 2px;
+    text-align:center;
+    border-right:1px solid var(--line);
+  }
+  .cell:last-child{border-right:none;}
+  .cell .sz{
+    font-size:10.5px;
+    color:var(--sub);
+    font-weight:700;
+    margin-bottom:3px;
+  }
+  .cell .pr{
+    font-size:14.5px;
+    font-weight:700;
+    letter-spacing:-.02em;
+  }
+  .cell .pr small{font-size:9px;font-weight:500;color:var(--sub);}
+  .cell .qty{
+    font-size:9.5px;
+    color:var(--sub);
+    margin-top:3px;
+  }
+  .cell.best .pr{color:var(--tomato-deep);}
+
+  /* ---------- Weekly bars ---------- */
+  .weekcard{
+    border:1px solid var(--line);
+    border-radius:12px;
+    margin:0 16px;
+    padding:12px 12px 10px 12px;
+  }
+  .weekbars{
+    display:flex;
+    align-items:flex-end;
+    justify-content:space-between;
+    height:92px;
+    margin:8px 4px 4px 4px;
+  }
+  .weekbar-col{
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    width:13%;
+  }
+  .bar-track{
+    width:100%;
+    height:70px;
+    display:flex;
+    align-items:flex-end;
+    justify-content:center;
+  }
+  .bar{
+    width:60%;
+    border-radius:4px 4px 2px 2px;
+    background:var(--vine);
+  }
+  .bar.low{background:var(--warn);}
+  .bar-label{
+    font-size:10px;
+    color:var(--sub);
+    margin-top:6px;
+    font-weight:700;
+  }
+  .bar-label.sat{color:var(--sat);}
+  .bar-label.hol{color:var(--hol);}
+  .bar-qty{font-size:9px;color:var(--sub);margin-top:1px;}
+  .flag{
+    display:inline-flex;
+    align-items:center;
+    gap:4px;
+    font-size:10px;
+    font-weight:700;
+    color:var(--warn);
+    background:var(--warn-bg);
+    border:1px solid #ecd9b3;
+    border-radius:20px;
+    padding:2px 7px;
+    margin-top:2px;
+  }
+  .nudge{
+    margin-top:10px;
+    background:var(--warn-bg);
+    border:1px solid #ecd9b3;
+    border-radius:10px;
+    padding:9px 10px;
+    font-size:11.5px;
+    color:#7a5620;
+    line-height:1.5;
+  }
+
+  /* ---------- YoY comparison ---------- */
+  .compare-card{
+    border:1px solid var(--line);
+    border-radius:12px;
+    margin:0 16px 10px 16px;
+    padding:12px;
+  }
+  .compare-row{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    padding:8px 0;
+    border-bottom:1px solid var(--line);
+  }
+  .compare-row:last-child{border-bottom:none;}
+  .compare-label{font-size:12px;color:var(--sub);}
+  .compare-vals{text-align:right;}
+  .compare-now{font-size:14px;font-weight:700;}
+  .compare-then{font-size:10.5px;color:var(--sub);}
+  .diff{
+    font-size:11.5px;
+    font-weight:700;
+    margin-left:8px;
+  }
+  .diff.up{color:var(--vine-deep);}
+  .diff.down{color:var(--tomato-deep);}
+
+  .mini-table{
+    width:100%;
+    border-collapse:collapse;
+    margin-top:4px;
+  }
+  .mini-table th{
+    font-size:10px;
+    color:var(--sub);
+    font-weight:700;
+    text-align:right;
+    padding:5px 4px;
+    border-bottom:1px solid var(--line);
+  }
+  .mini-table th:first-child{text-align:left;}
+  .mini-table td{
+    font-size:12px;
+    text-align:right;
+    padding:6px 4px;
+    border-bottom:1px solid var(--line);
+    font-weight:600;
+  }
+  .mini-table td:first-child{text-align:left;color:var(--sub);font-weight:700;}
+  .mini-table tr:last-child td{border-bottom:none;}
+  .tag-up{color:var(--vine-deep);}
+  .tag-down{color:var(--tomato-deep);}
+
+  /* ---------- Announcement ---------- */
+  .announce{
+    margin:18px 16px 0 16px;
+    border:1px solid #e7ded0;
+    background:#fbf8f2;
+    border-radius:12px;
+    padding:13px 14px;
+  }
+  .announce-head{
+    display:flex;
+    align-items:center;
+    gap:6px;
+    font-size:12.5px;
+    font-weight:700;
+    color:#8a5a1f;
+    margin-bottom:8px;
+  }
+  .announce-item{
+    font-size:12px;
+    line-height:1.6;
+    padding:7px 0;
+    border-top:1px dashed #e7ded0;
+    color:#4a4238;
+  }
+  .announce-item:first-of-type{border-top:none;}
+  .announce-date{font-size:10px;color:#9c8b6f;display:block;margin-bottom:1px;}
+
+  .foot{
+    text-align:center;
+    font-size:10px;
+    color:#b8b6b0;
+    padding:18px 16px 6px 16px;
+  }
+</style>
+</head>
+<body>
+<div class="phone">
+
+  <!-- ===== Header / Tabs ===== -->
+  <div style="background:#c94a3c;color:#fff;font-size:11px;font-weight:700;text-align:center;padding:6px 10px;letter-spacing:.02em;">
+    ⚠ これは検討用のモック画面です。数値はすべてダミーで、本番の仕様・デザインとは異なります。
+  </div>
+  <div class="topbar">
+    <div class="brandrow">
+      <div class="brand"><span class="dot"></span>ミニトマト部会 出荷情報</div>
+      <div class="asof">7/30(木) 更新</div>
+    </div>
+    <div class="tabs">
+      <button class="tab active" id="tab-kojin" onclick="setMode('kojin')">個人選果</button>
+      <button class="tab" id="tab-kyodo" onclick="setMode('kyodo')">共同選果</button>
+    </div>
+  </div>
+
+  <div class="subrow">
+    <select class="pack" id="packSelect" onchange="render()"></select>
+    <div class="updated-pill" id="dataLabel">前日実績</div>
+  </div>
+
+  <!-- ===== Date strip ===== -->
+  <div class="datestrip-wrap">
+    <div class="datestrip" id="datestrip"></div>
+    <div class="jumprow">
+      <button class="jumpbtn">◀ 前年同日を見る</button>
+      <button class="jumpbtn">日付を選ぶ ▾</button>
+    </div>
+  </div>
+
+  <!-- ===== Market price cards ===== -->
+  <div class="section">
+    <div class="section-title"><span class="bar"></span>市場別 サイズ単価(円/kg)</div>
+    <div class="section-note">緑数字=前年同日より高値の市場・サイズ</div>
+  </div>
+  <div id="marketCards"></div>
+
+  <!-- ===== Weekly variance ===== -->
+  <div class="section">
+    <div class="section-title"><span class="bar"></span>曜日別 出荷量(今週)</div>
+  </div>
+  <div class="weekcard">
+    <div class="weekbars" id="weekbars"></div>
+    <div class="nudge">⚠ 火曜日は例年比で出荷が少なめです。数量が集まると単価も安定しやすいので、次週の出荷にご協力をお願いします。</div>
+  </div>
+
+  <!-- ===== YoY comparison ===== -->
+  <div class="section">
+    <div class="section-title"><span class="bar"></span>前年比較</div>
+  </div>
+  <div class="compare-card">
+    <div class="compare-row">
+      <div class="compare-label">本日の出荷量(全市場計)</div>
+      <div class="compare-vals">
+        <span class="compare-now" id="cmpQtyNow">-</span>
+        <span class="diff" id="cmpQtyDiff"></span>
+        <div class="compare-then" id="cmpQtyThen"></div>
+      </div>
+    </div>
+    <div class="compare-row">
+      <div class="compare-label">本日の平均単価</div>
+      <div class="compare-vals">
+        <span class="compare-now" id="cmpPriceNow">-</span>
+        <span class="diff" id="cmpPriceDiff"></span>
+        <div class="compare-then" id="cmpPriceThen"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section" style="padding-top:2px;">
+    <div class="section-title"><span class="bar"></span>月別 数量ペース・単価(前年対比)</div>
+  </div>
+  <div class="compare-card">
+    <table class="mini-table" id="monthTable"></table>
+  </div>
+
+  <!-- ===== Announcements ===== -->
+  <div class="announce">
+    <div class="announce-head">📣 部会からのお知らせ</div>
+    <div class="announce-item">
+      <span class="announce-date">7/28</span>
+      来週月曜は集出荷場のメンテナンスのため、搬入受付を1時間繰り上げます(7:00〜)。
+    </div>
+    <div class="announce-item">
+      <span class="announce-date">7/22</span>
+      2S・S規格の需要が高まっています。選別時のご協力をお願いします。
+    </div>
+    <div class="announce-item">
+      <span class="announce-date">7/15</span>
+      来月の部会総会は8/28(金)19時、公民館にて開催予定です。
+    </div>
+  </div>
+
+  <div class="foot">モック画面・数値はダミーデータです</div>
+</div>
+
+<script>
+const markets = ['東京','神奈川','徳島','北九州','福岡','長崎','諫早'];
+const sizes = ['2L','L','M','S','2S'];
+const weekdays = ['月','火','水','木','金','土','日'];
+
+const basePrice = { '2L':860,'L':960,'M':1080,'S':1010,'2S':860 };
+const packMultiplier = {
+  'kojin-200':1.28, 'kojin-3kg':1.0,
+  'kyodo-3kg':1.02, 'kyodo-200':1.24
+};
+const marketMultiplier = {
+  '東京':1.10,'神奈川':1.06,'徳島':0.94,'北九州':0.98,'福岡':1.00,'長崎':0.95,'諫早':0.90
+};
+
+function seeded(seedStr){
+  let h = 0;
+  for(let i=0;i<seedStr.length;i++){ h = (h*31 + seedStr.charCodeAt(i)) >>> 0; }
+  return function(){ h = (h*1664525 + 1013904223) >>> 0; return (h % 1000)/1000; };
+}
+
+let mode = 'kojin'; // kojin | kyodo
+const packOptions = {
+  kojin: [{v:'kojin-200', l:'200gパック'}, {v:'kojin-3kg', l:'3kgバラ'}],
+  kyodo: [{v:'kyodo-3kg', l:'3kgバラ'}, {v:'kyodo-200', l:'200gパック'}]
+};
+
+function setMode(m){
+  mode = m;
+  document.getElementById('tab-kojin').classList.toggle('active', m==='kojin');
+  document.getElementById('tab-kyodo').classList.toggle('active', m==='kyodo');
+  const sel = document.getElementById('packSelect');
+  sel.innerHTML = '';
+  packOptions[m].forEach(o=>{
+    const opt = document.createElement('option');
+    opt.value = o.v; opt.textContent = o.l;
+    sel.appendChild(opt);
+  });
+  render();
+}
+
+function buildDateStrip(){
+  const strip = document.getElementById('datestrip');
+  strip.innerHTML = '';
+  const today = new Date(2026,6,30); // 7/30/2026 Thu, per current date
+  for(let i=-6;i<=0;i++){
+    const d = new Date(today);
+    d.setDate(today.getDate()+i);
+    const wd = d.getDay(); // 0 Sun .. 6 Sat
+    const pill = document.createElement('div');
+    pill.className = 'datepill' + (wd===6?' sat':'') + (wd===0?' hol':'') + (i===0?' sel':'');
+    pill.innerHTML = `<div class="wd">${weekdays[(wd+6)%7]}</div><div class="dn">${d.getMonth()+1}/${d.getDate()}</div>`;
+    strip.appendChild(pill);
+  }
+}
+
+function render(){
+  const packKey = document.getElementById('packSelect').value;
+  document.getElementById('dataLabel').textContent = '前日実績(7/29 水)';
+
+  // Market cards
+  const wrap = document.getElementById('marketCards');
+  wrap.innerHTML = '';
+  markets.forEach(mk=>{
+    const rnd = seeded(mk+packKey);
+    const cells = sizes.map(sz=>{
+      const price = Math.round(basePrice[sz] * packMultiplier[packKey] * marketMultiplier[mk] * (0.94+rnd()*0.12));
+      const qty = Math.round(20 + rnd()*160);
+      const isBest = sz==='S' || sz==='2S';
+      return `<div class="cell ${isBest?'best':''}">
+                <div class="sz">${sz}</div>
+                <div class="pr">${price}<small>円</small></div>
+                <div class="qty">${qty}kg</div>
+              </div>`;
+    }).join('');
+    const yoyPct = Math.round((rnd()*16 - 5));
+    const yoyUp = yoyPct >= 0;
+    const card = document.createElement('div');
+    card.className = 'market-card';
+    card.innerHTML = `
+      <div class="market-head">
+        <div class="market-name">${mk}</div>
+        <div class="yoy ${yoyUp?'up':'down'}">${yoyUp?'▲':'▼'} 前年比 ${Math.abs(yoyPct)}%</div>
+      </div>
+      <div class="price-grid">${cells}</div>`;
+    wrap.appendChild(card);
+  });
+
+  // Weekly bars
+  const weekWrap = document.getElementById('weekbars');
+  weekWrap.innerHTML = '';
+  const rndw = seeded('week'+packKey);
+  const qtys = weekdays.map((_,i)=> i===1 ? 18+rndw()*8 : 45+rndw()*55 ); // 火曜(index1) intentionally low
+  const maxQ = Math.max(...qtys);
+  weekdays.forEach((wd,i)=>{
+    const q = qtys[i];
+    const h = Math.max(10, Math.round((q/maxQ)*66));
+    const low = q < maxQ*0.45;
+    const col = document.createElement('div');
+    col.className = 'weekbar-col';
+    col.innerHTML = `
+      <div class="bar-track"><div class="bar ${low?'low':''}" style="height:${h}px"></div></div>
+      <div class="bar-label ${i===5?'sat':''} ${i===6?'hol':''}">${wd}</div>
+      <div class="bar-qty">${Math.round(q)}kg</div>
+      ${low?'<div class="flag">少なめ</div>':''}
+    `;
+    weekWrap.appendChild(col);
+  });
+
+  // YoY summary
+  const rndy = seeded('yoy'+packKey);
+  const qtyNow = Math.round(680 + rndy()*140);
+  const qtyThen = Math.round(qtyNow / (1+ (rndy()*0.2-0.06)));
+  const qtyDiff = Math.round(((qtyNow-qtyThen)/qtyThen)*100);
+  document.getElementById('cmpQtyNow').textContent = qtyNow + ' kg';
+  document.getElementById('cmpQtyThen').textContent = '前年同日 ' + qtyThen + ' kg';
+  const qd = document.getElementById('cmpQtyDiff');
+  qd.textContent = (qtyDiff>=0?'▲':'▼') + Math.abs(qtyDiff) + '%';
+  qd.className = 'diff ' + (qtyDiff>=0?'up':'down');
+
+  const priceNow = Math.round(960 * (0.96+rndy()*0.1));
+  const priceThen = Math.round(priceNow / (1+(rndy()*0.16-0.05)));
+  const priceDiff = Math.round(((priceNow-priceThen)/priceThen)*100);
+  document.getElementById('cmpPriceNow').textContent = priceNow + ' 円/kg';
+  document.getElementById('cmpPriceThen').textContent = '前年同日 ' + priceThen + ' 円/kg';
+  const pd = document.getElementById('cmpPriceDiff');
+  pd.textContent = (priceDiff>=0?'▲':'▼') + Math.abs(priceDiff) + '%';
+  pd.className = 'diff ' + (priceDiff>=0?'up':'down');
+
+  // Month table
+  const months = ['4月','5月','6月','7月(途中)'];
+  const rndm = seeded('month'+packKey);
+  let rows = `<tr><th>月</th><th>数量ペース</th><th>単価(前年比)</th></tr>`;
+  months.forEach(m=>{
+    const pace = Math.round(rndm()*24 - 8);
+    const price = Math.round(rndm()*14 - 4);
+    rows += `<tr>
+      <td>${m}</td>
+      <td class="${pace>=0?'tag-up':'tag-down'}">${pace>=0?'+':''}${pace}%</td>
+      <td class="${price>=0?'tag-up':'tag-down'}">${price>=0?'+':''}${price}%</td>
+    </tr>`;
+  });
+  document.getElementById('monthTable').innerHTML = rows;
+}
+
+buildDateStrip();
+setMode('kojin');
+</script>
+</body>
+</html>
