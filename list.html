@@ -129,9 +129,10 @@
   .csvnote{font-size:10px;color:var(--sub);text-align:right;margin-top:4px;}
 
   .tablewrap{overflow-x:auto;margin-top:8px;border:1px solid var(--line);border-radius:10px;}
-  table.list{border-collapse:collapse;width:100%;min-width:440px;font-size:12px;}
+  table.list{border-collapse:collapse;width:100%;min-width:490px;font-size:12px;}
   .list td .unit{font-size:9px;color:var(--sub);margin-left:1px;}
   .list td.kg{color:var(--sub);font-size:11.5px;}
+  .list td.pkg{color:var(--sub);font-size:11.5px;}
   .list th,.list td{padding:7px 6px;border-bottom:1px solid var(--line);text-align:right;white-space:nowrap;}
   .list th{background:var(--floor);font-size:10.5px;color:var(--sub);position:sticky;top:0;}
   .list td:nth-child(1),.list th:nth-child(1),
@@ -247,7 +248,7 @@
     <div class="tablewrap">
       <table class="list">
         <thead>
-          <tr><th>日付</th><th>選果</th><th>市場</th><th>荷姿</th><th>サイズ</th><th>単価<br>(円/kg)</th><th>数量<br>(ﾊﾟｯｸ/ｹｰｽ)</th><th>kg<br>換算</th><th></th></tr>
+          <tr><th>日付</th><th>選果</th><th>市場</th><th>荷姿</th><th>サイズ</th><th>単価<br>(1ﾊﾟｯｸ/1ｹｰｽ)</th><th>単価<br>(円/kg)</th><th>数量<br>(ﾊﾟｯｸ/ｹｰｽ)</th><th>kg<br>換算</th><th></th></tr>
         </thead>
         <tbody id="tbody"></tbody>
       </table>
@@ -331,12 +332,16 @@ DATES.forEach((d,di)=>{
       SIZES.forEach((s,si)=>{
         // 一部欠測にして「出荷なし=行なし」を表現
         if((di+mi+si+mei)%9===0) return;
-        const p = 880 + mi*28 + si*42 + di*6 + mei*35;
+        // 単価は1パック/1ケースあたり。円/kg換算:200g=×5、3kg=÷3
+        const is200 = pack==="200gパック";
+        const pu = is200 ? 165 + mi*4 + si*7 + di*2      // 円/パック
+                         : 2450 + mi*40 + si*70 + di*15; // 円/ケース
+        const pkg = is200 ? pu*5 : Math.round(pu/3);     // 円/kg換算
         const q = 30 + ((di*11+mi*7+si*5+mei*13)%70); // 実際の個数(パック数/ケース数)
-        const unit = pack==="200gパック" ? "パック" : "ケース";
-        const kg = pack==="200gパック" ? q/5 : q*3;   // 200g:5パック=1kg / 3kg:1ケース=3kg
+        const unit = is200 ? "パック" : "ケース";
+        const kg = is200 ? q/5 : q*3;                 // 200g:5パック=1kg / 3kg:1ケース=3kg
         const edited = (d.v==="8/6" && m==="徳島" && s==="M" && me==="個人");
-        ROWS.push({date:d, method:me, pack, mkt:m, size:s, p, q, unit, kg, edited});
+        ROWS.push({date:d, method:me, pack, mkt:m, size:s, pu, pkg, q, unit, kg, edited});
       });
     });
   });
@@ -381,7 +386,8 @@ function renderTable(){
       <td>${r.mkt}</td>
       <td>${r.pack==="200gパック"?"200g":"3kg"}</td>
       <td>${r.size}</td>
-      <td class="price">${r.p.toLocaleString()}${r.edited?'<span class="editedmark" data-tip="1">修正済</span>':''}</td>
+      <td class="price">${r.pu.toLocaleString()}<span class="unit">円/${r.unit==="パック"?"ﾊﾟｯｸ":"ｹｰｽ"}</span>${r.edited?'<span class="editedmark" data-tip="1">修正済</span>':''}</td>
+      <td class="pkg">${r.pkg.toLocaleString()}</td>
       <td>${r.q}<span class="unit">${r.unit==="パック"?"ﾊﾟｯｸ":"ｹｰｽ"}</span></td>
       <td class="kg">${fmtKg(r.kg)}</td>
       <td><button class="editbtn">編集</button></td>
@@ -414,8 +420,8 @@ function showToast(msg){
 
 // ---- CSV(モック:実際にダウンロードされる) ----
 document.getElementById("csvBtn").addEventListener("click",()=>{
-  const head = "日付,選果方法,荷姿,市場,サイズ,単価(円/kg),数量,数量単位,kg換算\n";
-  const lines = current.map(r=>[r.date.label,r.method,r.pack,r.mkt,r.size,r.p,r.q,r.unit,Math.round(r.kg*10)/10].join(",")).join("\n");
+  const head = "日付,選果方法,荷姿,市場,サイズ,単価(1パック・1ケースあたり),単価(円/kg),数量,数量単位,kg換算\n";
+  const lines = current.map(r=>[r.date.label,r.method,r.pack,r.mkt,r.size,r.pu,r.pkg,r.q,r.unit,Math.round(r.kg*10)/10].join(",")).join("\n");
   const bom = new Uint8Array([0xEF,0xBB,0xBF]); // UTF-8 BOM(Excel文字化け防止)
   const blob = new Blob([bom, head+lines], {type:"text/csv"});
   const a = document.createElement("a");
@@ -427,7 +433,7 @@ document.getElementById("csvBtn").addEventListener("click",()=>{
 
 // ---- 修正済みマーク:タップで修正日時 ----
 document.addEventListener("click",(e)=>{
-  if(e.target.dataset.tip) showToast("8/7 9:12 に管理者が修正(修正前: 1,020円)");
+  if(e.target.dataset.tip) showToast("8/7 9:12 に管理者が修正(修正前: 172円/パック)");
   if(e.target.classList.contains("editbtn")) showToast("(モック)管理者は入力画面でこの日のデータを直接修正できます");
 });
 

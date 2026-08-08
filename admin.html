@@ -244,6 +244,24 @@
     .matrixwrap{display:none;}
     .accwrap{display:block;}
   }
+
+  /* ---------- 確定前の確認ダイアログ ---------- */
+  .modalbg{
+    display:none;position:fixed;inset:0;z-index:60;
+    background:rgba(30,30,28,.45);
+    align-items:center;justify-content:center;padding:20px;
+  }
+  .modalbg.show{display:flex;}
+  .modal{
+    background:#fff;border-radius:14px;max-width:380px;width:100%;
+    padding:20px 20px 16px 20px;
+    box-shadow:0 12px 40px rgba(0,0,0,.25);
+  }
+  .modal .mtitle{font-size:14.5px;font-weight:700;margin-bottom:10px;}
+  .modal .mbody{font-size:13px;line-height:1.8;color:var(--ink);}
+  .modal .mbody b{color:var(--vine-deep);}
+  .modal .mnote{font-size:11px;color:var(--sub);margin-top:8px;line-height:1.6;}
+  .modal .mbtns{display:flex;gap:10px;justify-content:flex-end;margin-top:16px;}
 </style>
 </head>
 <body>
@@ -291,9 +309,7 @@
   </div>
 
   <div class="hint">
-    FAXの販売通知と見比べながら、そのまま表に転記してください。
-    数量は<b>実際の個数(200gパック=パック数、3kgバラ=ケース数)</b>で入力します。kg換算(パック÷5、ケース×3)は自動表示されます。
-    <b>Tab / Enter で次のセルに移動</b>でき、出荷がなかった市場は空欄のままで構いません。
+    出荷がなかった市場は空欄のままで構いません。
     保存時に <span class="legend"></span> が付いたセルは、桁間違い等の可能性があるので確認をお願いします。
   </div>
 
@@ -316,20 +332,39 @@
   </div>
 </div>
 
+<div class="modalbg" id="confirmBg">
+  <div class="modal">
+    <div class="mtitle">確定前の確認</div>
+    <div class="mbody" id="confirmBody"></div>
+    <div class="mnote">確定後もこの画面から修正できます(修正内容は履歴に記録されます)。</div>
+    <div class="mbtns">
+      <button class="btn secondary" id="mCancel">戻って見直す</button>
+      <button class="btn primary" id="mOk">この内容で確定</button>
+    </div>
+  </div>
+</div>
+
 <script>
 const MARKETS = ["東京","神奈川","徳島","北九州","福岡","長崎","諫早"];
 const SIZES = ["2L","L","M","S","2S"];
 
 // 前日(8/7)のダミーデータ:入力チェックの比較にも使用
-const PREV = {};
+// 単価は1パック/1ケースあたり。荷姿に応じて現実的な水準を返す
+const PREVQ = {}, PIDX = {};
 MARKETS.forEach((m,mi)=>{ SIZES.forEach((s,si)=>{
-  PREV[m+"_"+s] = { p: 900 + mi*30 + si*45, q: 40 + ((mi*7+si*3)%60) };
+  const k = m+"_"+s;
+  PIDX[k] = [mi,si];
+  PREVQ[k] = 40 + ((mi*7+si*3)%60);
 });});
+function prevP(k){
+  const [mi,si] = PIDX[k];
+  return unitInfo().is200 ? 165 + mi*4 + si*7 : 2450 + mi*40 + si*70;
+}
 
 // ---- マトリクス生成 ----
 const matrix = document.getElementById("matrix");
 let head = "<thead><tr><th></th>";
-SIZES.forEach(s=>{ head += `<th>${s}<small>単価(円/kg) / 数量(<span class="unitlbl">パック</span>)</small></th>`; });
+SIZES.forEach(s=>{ head += `<th>${s}<small>単価 / 数量(<span class="unitlbl">パック</span>)</small></th>`; });
 head += "</tr></thead><tbody>";
 let body = "";
 MARKETS.forEach(m=>{
@@ -337,7 +372,7 @@ MARKETS.forEach(m=>{
   SIZES.forEach(s=>{
     const k = m+"_"+s;
     body += `<td id="td_${k}"><div class="cell">
-      <input class="price" inputmode="numeric" placeholder="円/kg" data-k="${k}" data-t="p">
+      <input class="price" inputmode="numeric" placeholder="単価" data-k="${k}" data-t="p">
       <input class="qty" inputmode="numeric" placeholder="パック" data-k="${k}" data-t="q">
       <div class="u conv" data-ck="${k}">&nbsp;</div>
     </div></td>`;
@@ -349,7 +384,7 @@ matrix.innerHTML = head + body + "</tbody>";
 // ---- アコーディオン生成(スマホ) ----
 const accwrap = document.getElementById("accwrap");
 MARKETS.forEach((m,i)=>{
-  let rows = `<div class="acchead"><span></span><span>単価(円/kg)</span><span>数量(<span class="unitlbl">パック</span>)</span><span>kg換算</span></div>`;
+  let rows = `<div class="acchead"><span></span><span>単価(円)</span><span>数量(<span class="unitlbl">パック</span>)</span><span>kg換算</span></div>`;
   SIZES.forEach(s=>{
     const k = m+"_"+s;
     rows += `<div class="accrow"><span class="sz">${s}</span>
@@ -373,7 +408,7 @@ function syncTwin(el){
 // 200gパック:5パックで1kg / 3kgバラ:1ケース=3kg
 function unitInfo(){
   const is200 = document.getElementById("packSel").value === "200gパック";
-  return is200 ? {name:"パック", toKg:q=>q/5} : {name:"ケース", toKg:q=>q*3};
+  return is200 ? {name:"パック", toKg:q=>q/5, is200:true} : {name:"ケース", toKg:q=>q*3, is200:false};
 }
 function fmtKg(v){
   return (Math.round(v*10)/10).toLocaleString();
@@ -419,8 +454,7 @@ allInputs.forEach(el=>{
 // ---- 前日の値をコピー ----
 document.getElementById("copyBtn").addEventListener("click",()=>{
   allInputs.forEach(el=>{
-    const d = PREV[el.dataset.k];
-    el.value = el.dataset.t==="p" ? d.p : d.q;
+    el.value = el.dataset.t==="p" ? prevP(el.dataset.k) : PREVQ[el.dataset.k];
     el.classList.remove("flag");
   });
   MARKETS.forEach(m=>SIZES.forEach(s=>updateConv(m+"_"+s)));
@@ -442,7 +476,7 @@ function runCheck(){
     let bad = false;
     if(q!=="" && p==="") bad = true;                     // 数量のみで単価が空
     if(p!==""){
-      const prev = PREV[k].p;
+      const prev = prevP(k);
       if(Math.abs(Number(p)-prev)/prev > 0.3) bad = true; // 前日比30%以上の乖離
     }
     allInputs.filter(x=>x.dataset.k===k).forEach(x=>{
@@ -460,13 +494,30 @@ function saveFlow(commit){
     checkMsg.className = "checkbox-msg warn show";
     checkMsg.innerHTML = `⚠ <b>${flags}件のセル</b>が黄色になっています(前日と単価が大きく違う、または数量のみで単価が空)。FAXと見比べて確認のうえ、もう一度${commit?"「確定」":"「下書き保存」"}を押してください。<br><span style="font-size:11px">※内容が正しい場合はそのまま保存できます(モックでは2回目で保存されます)</span>`;
     checkMsg.dataset.pending = "1";
-    if(checkMsg.dataset.last === String(commit) && checkMsg.dataset.retry === "1"){ doSave(commit); return; }
+    if(checkMsg.dataset.last === String(commit) && checkMsg.dataset.retry === "1"){ commit ? openConfirm() : doSave(false); return; }
     checkMsg.dataset.retry = "1";
     checkMsg.dataset.last = String(commit);
     return;
   }
-  doSave(commit);
+  if(commit){ openConfirm(); } else { doSave(false); }
 }
+
+// ---- 確定前の確認ダイアログ ----
+const confirmBg = document.getElementById("confirmBg");
+function openConfirm(){
+  const day = dayBadge.textContent;
+  const method = document.getElementById("tabP").classList.contains("active") ? "個人選果" : "共同選果";
+  const pack = document.getElementById("packSel").value;
+  const filled = allInputs.filter(x=>!x.dataset.acc && x.dataset.t==="p" && x.value.trim()!=="").length;
+  document.getElementById("confirmBody").innerHTML =
+    `<b>${day} / ${method} / ${pack}</b> のデータを確定し、閲覧画面に反映します。<br>入力済み:単価 ${filled}セル`;
+  confirmBg.classList.add("show");
+}
+document.getElementById("mCancel").addEventListener("click",()=>confirmBg.classList.remove("show"));
+document.getElementById("mOk").addEventListener("click",()=>{
+  confirmBg.classList.remove("show");
+  doSave(true);
+});
 function doSave(commit){
   checkMsg.className = "checkbox-msg ok show";
   checkMsg.dataset.retry = "0";
@@ -500,8 +551,7 @@ daySel.addEventListener("change",()=>{
   editNote.innerHTML = `✏️ <b>${label} は確定済みのデータです。</b>セルを直して保存すると閲覧画面に即反映され、修正前後の値・実行者・日時が修正履歴に自動記録されます。`;
   allInputs.forEach(el=>{
     if(isPast){
-      const d = PREV[el.dataset.k];
-      el.value = el.dataset.t==="p" ? d.p : d.q;
+      el.value = el.dataset.t==="p" ? prevP(el.dataset.k) : PREVQ[el.dataset.k];
     }else{
       el.value = "";
     }
