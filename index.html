@@ -221,7 +221,8 @@
     gap:3px;
   }
   .yoy.up{color:var(--vine-deep);}
-  .yoy.down{color:var(--sub);}
+  .yoy.down{color:var(--hol);}
+  .yoy.zero{color:var(--sub);}
   .price-grid{
     display:grid;
     grid-template-columns:repeat(5,1fr);
@@ -249,7 +250,7 @@
     color:var(--sub);
     margin-top:3px;
   }
-  .cell.best .pr{color:var(--tomato-deep);}
+  .cell.up .pr{color:var(--vine-deep);}
 
   /* ---------- Weekly bars ---------- */
   .weekcard{
@@ -315,6 +316,11 @@
     font-size:11.5px;
     color:#7a5620;
     line-height:1.5;
+  }
+  .nudge.good{
+    background:#eef4ee;
+    border-color:#cfe1d1;
+    color:var(--vine-deep);
   }
 
   /* ---------- YoY comparison ---------- */
@@ -447,18 +453,19 @@
 
   <!-- ===== Market price cards ===== -->
   <div class="section">
-    <div class="section-title"><span class="bar"></span>市場別 サイズ単価(円/kg)</div>
+    <div class="section-title"><span class="bar"></span>市場別 サイズ単価(<span id="unitNote">1パックあたり</span>)</div>
     <div class="section-note">緑数字=前年同日より高値の市場・サイズ</div>
   </div>
   <div id="marketCards"></div>
 
   <!-- ===== Weekly variance ===== -->
   <div class="section">
-    <div class="section-title"><span class="bar"></span>曜日別 出荷量(今週)</div>
+    <div class="section-title"><span class="bar"></span>曜日別 出荷量(先週)</div>
+    <div class="section-note">7/20(月)〜7/26(日)・最多の曜日を100とした比較</div>
   </div>
   <div class="weekcard">
     <div class="weekbars" id="weekbars"></div>
-    <div class="nudge">⚠ 火曜日は例年比で出荷が少なめです。数量が集まると単価も安定しやすいので、次週の出荷にご協力をお願いします。</div>
+    <div id="nudgeArea"></div>
   </div>
 
   <!-- ===== YoY comparison ===== -->
@@ -570,54 +577,86 @@ function render(){
   const packKey = document.getElementById('packSelect').value;
   document.getElementById('dataLabel').textContent = '前日実績(7/29 水)';
 
+  // 単価は1パック/1ケースあたり(円/kg換算:200g=÷5相当、3kg=×3相当)
+  const isPack = packKey.includes('200');
+  const unitName = isPack ? 'パック' : 'ケース';
+  document.getElementById('unitNote').textContent = '1' + unitName + 'あたり';
+  const toUnit = kg => isPack ? Math.round(kg/5) : kg*3;
+
   // Market cards
   const wrap = document.getElementById('marketCards');
   wrap.innerHTML = '';
   markets.forEach(mk=>{
     const rnd = seeded(mk+packKey);
+    let upCount = 0, cellCount = 0;
     const cells = sizes.map(sz=>{
-      const price = Math.round(basePrice[sz] * packMultiplier[packKey] * marketMultiplier[mk] * (0.94+rnd()*0.12));
+      const kgPrice = Math.round(basePrice[sz] * packMultiplier[packKey] * marketMultiplier[mk] * (0.94+rnd()*0.12));
+      const price = toUnit(kgPrice);
+      const prevPrice = Math.round(price / (1 + (rnd()*0.16 - 0.06))); // 前年同日(ダミー)
+      const up = price > prevPrice;
+      if(up) upCount++;
+      cellCount++;
       const qty = Math.round(20 + rnd()*160);
-      const isBest = sz==='S' || sz==='2S';
-      return `<div class="cell ${isBest?'best':''}">
+      return `<div class="cell ${up?'up':''}">
                 <div class="sz">${sz}</div>
-                <div class="pr">${price}<small>円</small></div>
+                <div class="pr">${price.toLocaleString()}<small>円</small></div>
                 <div class="qty">${qty}kg</div>
               </div>`;
     }).join('');
     const yoyPct = Math.round((rnd()*16 - 5));
-    const yoyUp = yoyPct >= 0;
+    const cls = yoyPct>0 ? 'up' : (yoyPct<0 ? 'down' : 'zero');
+    const mark = yoyPct>0 ? '▲' : (yoyPct<0 ? '▼' : '±');
     const card = document.createElement('div');
     card.className = 'market-card';
     card.innerHTML = `
       <div class="market-head">
         <div class="market-name">${mk}</div>
-        <div class="yoy ${yoyUp?'up':'down'}">${yoyUp?'▲':'▼'} 前年比 ${Math.abs(yoyPct)}%</div>
+        <div class="yoy ${cls}">${mark} 前年比 ${Math.abs(yoyPct)}%</div>
       </div>
       <div class="price-grid">${cells}</div>`;
     wrap.appendChild(card);
   });
 
-  // Weekly bars
+  // Weekly bars(先週実績。最多の曜日を100として棒の高さを算出)
   const weekWrap = document.getElementById('weekbars');
   weekWrap.innerHTML = '';
-  const rndw = seeded('week'+packKey);
-  const qtys = weekdays.map((_,i)=> i===1 ? 18+rndw()*8 : 45+rndw()*55 ); // 火曜(index1) intentionally low
+  const rndw = seeded('lastweek'+packKey);
+  const qtys = weekdays.map(()=> 25 + rndw()*75 );
   const maxQ = Math.max(...qtys);
+  const avgQ = qtys.reduce((a,b)=>a+b,0) / qtys.length;
   weekdays.forEach((wd,i)=>{
     const q = qtys[i];
-    const h = Math.max(10, Math.round((q/maxQ)*66));
-    const low = q < maxQ*0.45;
+    const h = Math.max(6, Math.round((q/maxQ)*66)); // 最多=100(66px)
+    const low = q < avgQ*0.7;
     const col = document.createElement('div');
     col.className = 'weekbar-col';
     col.innerHTML = `
       <div class="bar-track"><div class="bar ${low?'low':''}" style="height:${h}px"></div></div>
       <div class="bar-label ${i===5?'sat':''} ${i===6?'hol':''}">${wd}</div>
       <div class="bar-qty">${Math.round(q)}kg</div>
-      ${low?'<div class="flag">少なめ</div>':''}
     `;
     weekWrap.appendChild(col);
   });
+
+  // 注意書き・提案の自動判定(本番はDBの先週実績から同ロジックで自動生成)
+  const nudgeArea = document.getElementById('nudgeArea');
+  let nudges = '';
+  const lowDays = weekdays.filter((_,i)=> qtys[i] < avgQ*0.7);
+  if(lowDays.length){
+    nudges += `<div class="nudge">⚠ 先週は${lowDays.map(d=>d+'曜').join('・')}の出荷が少なめでした。数量が集まると単価も安定しやすいので、週を通した出荷の平準化にご協力をお願いします。</div>`;
+  }else{
+    nudges += `<div class="nudge good">✅ 先週は曜日ごとの出荷ばらつきが小さく、安定した出荷でした。</div>`;
+  }
+  // 曜日別の平均単価に差があれば提案として表示(1パック/1ケースあたりで比較)
+  const rndp = seeded('wprice'+packKey);
+  const wPrices = weekdays.map(()=> toUnit(Math.round(985 * packMultiplier[packKey] * (0.93+rndp()*0.14))) );
+  const maxP = Math.max(...wPrices), minP = Math.min(...wPrices);
+  const spread = (maxP-minP)/minP;
+  if(spread > 0.08){
+    const hiDay = weekdays[wPrices.indexOf(maxP)];
+    nudges += `<div class="nudge good">💡 先週は${hiDay}曜の平均単価が高めでした(週内で約${Math.round(spread*100)}%差)。出荷が偏っている場合は、単価の高い曜日への振り分けもご検討ください。</div>`;
+  }
+  nudgeArea.innerHTML = nudges;
 
   // YoY summary
   const rndy = seeded('yoy'+packKey);
@@ -630,11 +669,12 @@ function render(){
   qd.textContent = (qtyDiff>=0?'▲':'▼') + Math.abs(qtyDiff) + '%';
   qd.className = 'diff ' + (qtyDiff>=0?'up':'down');
 
-  const priceNow = Math.round(960 * (0.96+rndy()*0.1));
+  const kgAvg = Math.round(960 * (0.96+rndy()*0.1));
+  const priceNow = toUnit(kgAvg);
   const priceThen = Math.round(priceNow / (1+(rndy()*0.16-0.05)));
   const priceDiff = Math.round(((priceNow-priceThen)/priceThen)*100);
-  document.getElementById('cmpPriceNow').textContent = priceNow + ' 円/kg';
-  document.getElementById('cmpPriceThen').textContent = '前年同日 ' + priceThen + ' 円/kg';
+  document.getElementById('cmpPriceNow').textContent = priceNow.toLocaleString() + ' 円/' + unitName;
+  document.getElementById('cmpPriceThen').textContent = '前年同日 ' + priceThen.toLocaleString() + ' 円/' + unitName;
   const pd = document.getElementById('cmpPriceDiff');
   pd.textContent = (priceDiff>=0?'▲':'▼') + Math.abs(priceDiff) + '%';
   pd.className = 'diff ' + (priceDiff>=0?'up':'down');
