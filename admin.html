@@ -1,0 +1,529 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>管理画面:数量・単価入力(モック)</title>
+<style>
+  :root{
+    --ink:#232323;
+    --sub:#6f6f6f;
+    --line:#e3e2df;
+    --paper:#ffffff;
+    --floor:#faf9f7;
+    --vine:#4c7a52;
+    --vine-deep:#33583a;
+    --tomato:#c94a3c;
+    --tomato-deep:#a63a2f;
+    --sat:#2f6fb0;
+    --sat-bg:#eaf2fa;
+    --hol:#c94a3c;
+    --hol-bg:#fbebe9;
+    --warn:#c8862c;
+    --warn-bg:#fbf1e1;
+    --admin:#8a6d1f;
+    --admin-bg:#f6efd9;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:#efeee9;
+    font-family:"Hiragino Sans","Yu Gothic UI","BIZ UDPGothic",system-ui,-apple-system,sans-serif;
+    color:var(--ink);
+    -webkit-font-smoothing:antialiased;
+  }
+  .sheet{
+    max-width:900px;
+    margin:0 auto;
+    background:var(--paper);
+    min-height:100vh;
+    box-shadow:0 0 40px rgba(0,0,0,0.12);
+    padding-bottom:96px;
+  }
+  .mockbanner{
+    background:#fff5cc;
+    color:#7a5c00;
+    font-size:11px;
+    text-align:center;
+    padding:6px 10px;
+  }
+  /* ---- 管理モードを常時示す帯 ---- */
+  .adminband{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:8px;
+    background:var(--admin-bg);
+    color:var(--admin);
+    border-bottom:2px solid var(--admin);
+    font-size:12px;
+    font-weight:700;
+    padding:6px 16px;
+  }
+  .adminband .who{font-weight:400;font-size:11px;}
+  .topbar{
+    padding:14px 16px 0 16px;
+    position:sticky;
+    top:0;
+    background:var(--paper);
+    z-index:20;
+    border-bottom:1px solid var(--line);
+  }
+  .brandrow{
+    display:flex;
+    align-items:baseline;
+    justify-content:space-between;
+    margin-bottom:10px;
+  }
+  .brand{font-size:15px;font-weight:700;letter-spacing:.02em;}
+  .brand .dot{
+    display:inline-block;width:7px;height:7px;border-radius:50%;
+    background:var(--tomato);margin-right:6px;vertical-align:middle;
+  }
+  .backlink{font-size:11.5px;color:var(--sub);text-decoration:none;}
+  .tabs{display:flex;gap:0;margin-top:2px;}
+  .tab{
+    flex:1;text-align:center;padding:10px 0 12px 0;
+    font-size:14px;font-weight:700;color:var(--sub);
+    border:none;border-bottom:3px solid transparent;
+    background:none;font-family:inherit;cursor:pointer;
+  }
+  .tab.active{color:var(--vine-deep);border-bottom:3px solid var(--vine);}
+
+  .subrow{
+    display:flex;flex-wrap:wrap;align-items:center;gap:10px;
+    padding:12px 16px;
+  }
+  select, .btn{
+    font-family:inherit;font-size:13.5px;font-weight:700;color:var(--ink);
+    background:var(--floor);border:1px solid var(--line);border-radius:8px;
+    padding:8px 10px;
+  }
+  .btn{cursor:pointer;}
+  .btn:active{transform:translateY(1px);}
+  .btn.ghost{font-weight:400;font-size:12.5px;}
+  label.fld{font-size:11.5px;color:var(--sub);display:flex;flex-direction:column;gap:3px;}
+
+  .daybadge{
+    font-size:12.5px;font-weight:700;border-radius:8px;padding:8px 10px;
+    border:1px solid var(--line);background:var(--floor);
+  }
+  .daybadge.sat{color:var(--sat);background:var(--sat-bg);border-color:#bcd4ec;}
+  .daybadge.hol{color:var(--hol);background:var(--hol-bg);border-color:#eec6c1;}
+
+  /* ---- 修正モードの案内 ---- */
+  .editnote{
+    display:none;
+    margin:0 16px 4px 16px;
+    background:var(--warn-bg);
+    border:1px solid #ecd7ae;
+    color:#7a5410;
+    border-radius:10px;
+    font-size:12px;
+    padding:9px 12px;
+    line-height:1.6;
+  }
+  .editnote.show{display:block;}
+
+  .hint{
+    margin:8px 16px 4px 16px;
+    font-size:11.5px;color:var(--sub);line-height:1.7;
+  }
+  .hint b{color:var(--ink);}
+  .legend{
+    display:inline-block;width:12px;height:12px;border-radius:3px;
+    background:var(--warn-bg);border:1px solid var(--warn);
+    vertical-align:-1px;margin-right:3px;
+  }
+
+  /* ---------- マトリクス(PC/タブレット) ---------- */
+  .matrixwrap{padding:8px 16px 0 16px;overflow-x:auto;}
+  table.matrix{
+    border-collapse:collapse;width:100%;min-width:640px;
+  }
+  .matrix th,.matrix td{
+    border:1px solid var(--line);
+    padding:4px;
+    text-align:center;
+  }
+  .matrix thead th{
+    background:var(--floor);
+    font-size:12px;padding:8px 4px;
+  }
+  .matrix thead th small{display:block;font-weight:400;color:var(--sub);font-size:10px;}
+  .matrix .mkt{
+    background:var(--floor);
+    font-size:12.5px;font-weight:700;
+    white-space:nowrap;padding:4px 10px;
+    text-align:left;
+  }
+  .cell{display:flex;flex-direction:column;gap:3px;}
+  .cell input{
+    font-family:inherit;width:100%;border:1px solid var(--line);
+    border-radius:6px;padding:5px 4px;font-size:13px;text-align:right;
+    background:#fff;
+  }
+  .cell input.price{font-weight:700;}
+  .cell input.qty{font-size:11.5px;color:var(--sub);}
+  .cell input:focus{outline:2px solid var(--vine);outline-offset:-1px;}
+  .cell input.flag{background:var(--warn-bg);border-color:var(--warn);}
+  .cell .u{font-size:9.5px;color:var(--sub);text-align:right;line-height:1;}
+  td.edited{position:relative;}
+  td.edited::after{
+    content:"修正済";
+    position:absolute;top:2px;left:2px;
+    font-size:8.5px;color:var(--admin);
+    background:var(--admin-bg);border-radius:4px;padding:0 3px;
+  }
+
+  /* ---------- アコーディオン(スマホ) ---------- */
+  .accwrap{display:none;padding:8px 16px 0 16px;}
+  details.acc{
+    border:1px solid var(--line);border-radius:10px;
+    margin-bottom:8px;background:#fff;overflow:hidden;
+  }
+  details.acc summary{
+    list-style:none;cursor:pointer;
+    display:flex;justify-content:space-between;align-items:center;
+    padding:11px 14px;font-size:13.5px;font-weight:700;
+    background:var(--floor);
+  }
+  details.acc summary::after{content:"▾";color:var(--sub);}
+  details.acc[open] summary::after{content:"▴";}
+  .accrow{
+    display:grid;grid-template-columns:38px 1fr 1fr 58px;
+    gap:8px;align-items:center;
+    padding:7px 14px;border-top:1px solid var(--line);
+    font-size:12.5px;
+  }
+  .accconv{font-size:11px;color:var(--sub);text-align:right;}
+  .accrow .sz{font-weight:700;}
+  .accrow input{
+    font-family:inherit;width:100%;border:1px solid var(--line);
+    border-radius:6px;padding:7px 6px;font-size:13px;text-align:right;background:#fff;
+  }
+  .accrow input.flag{background:var(--warn-bg);border-color:var(--warn);}
+  .acchead{
+    display:grid;grid-template-columns:38px 1fr 1fr 58px;gap:8px;
+    padding:6px 14px 0 14px;font-size:10px;color:var(--sub);
+  }
+
+  /* ---------- チェック結果 ---------- */
+  .checkbox-msg{
+    display:none;
+    margin:10px 16px 0 16px;
+    border-radius:10px;
+    font-size:12.5px;line-height:1.7;
+    padding:10px 12px;
+  }
+  .checkbox-msg.warn{background:var(--warn-bg);border:1px solid #ecd7ae;color:#7a5410;}
+  .checkbox-msg.ok{background:#eef4ee;border:1px solid #cfe1d1;color:var(--vine-deep);}
+  .checkbox-msg.show{display:block;}
+
+  /* ---------- フッター操作 ---------- */
+  .actionbar{
+    position:fixed;bottom:0;left:0;right:0;
+    background:rgba(255,255,255,.96);
+    border-top:1px solid var(--line);
+    backdrop-filter:blur(4px);
+    z-index:30;
+  }
+  .actionbar .inner{
+    max-width:900px;margin:0 auto;
+    display:flex;gap:10px;align-items:center;
+    padding:10px 16px;
+  }
+  .status{font-size:11px;color:var(--sub);margin-right:auto;line-height:1.5;}
+  .btn.primary{
+    background:var(--vine);border-color:var(--vine-deep);color:#fff;
+    padding:11px 18px;font-size:14px;
+  }
+  .btn.secondary{padding:11px 14px;}
+
+  @media (max-width:700px){
+    .matrixwrap{display:none;}
+    .accwrap{display:block;}
+  }
+</style>
+</head>
+<body>
+<div class="sheet">
+  <div class="mockbanner">⚠ これは検討用のモック画面です。数値はすべてダミーで、本番の仕様・デザインとは異なります。</div>
+  <div class="adminband">
+    <span>🔑 管理モード ─ 数量・単価入力</span>
+    <span class="who">ログイン中:山田(管理者) ・ 操作はすべて記録されます</span>
+  </div>
+
+  <div class="topbar">
+    <div class="brandrow">
+      <div class="brand"><span class="dot"></span>ミニトマト部会 出荷情報</div>
+      <a class="backlink" href="index.html">← 閲覧画面へ戻る</a>
+    </div>
+    <div class="tabs">
+      <button class="tab active" id="tabP">個人選果</button>
+      <button class="tab" id="tabC">共同選果</button>
+    </div>
+  </div>
+
+  <div class="subrow">
+    <label class="fld">対象日
+      <select id="daySel">
+        <option value="0808">8/8(土) ※本日</option>
+        <option value="0807">8/7(金)</option>
+        <option value="0806">8/6(木)</option>
+        <option value="0805">8/5(水)</option>
+        <option value="0804">8/4(火)</option>
+      </select>
+    </label>
+    <label class="fld">荷姿
+      <select id="packSel">
+        <option>200gパック</option>
+        <option>3kgバラ</option>
+      </select>
+    </label>
+    <span class="daybadge sat" id="dayBadge">8/8(土)</span>
+    <button class="btn ghost" id="copyBtn">前日の値をコピー</button>
+  </div>
+
+  <div class="editnote" id="editNote">
+    ✏️ <b>8/7(金) は確定済みのデータです。</b>セルを直して保存すると閲覧画面に即反映され、
+    修正前後の値・実行者・日時が修正履歴に自動記録されます。
+  </div>
+
+  <div class="hint">
+    FAXの販売通知と見比べながら、そのまま表に転記してください。
+    数量は<b>実際の個数(200gパック=パック数、3kgバラ=ケース数)</b>で入力します。kg換算(パック÷5、ケース×3)は自動表示されます。
+    <b>Tab / Enter で次のセルに移動</b>でき、出荷がなかった市場は空欄のままで構いません。
+    保存時に <span class="legend"></span> が付いたセルは、桁間違い等の可能性があるので確認をお願いします。
+  </div>
+
+  <!-- ===== PC/タブレット:マトリクス ===== -->
+  <div class="matrixwrap">
+    <table class="matrix" id="matrix"></table>
+  </div>
+
+  <!-- ===== スマホ:市場別アコーディオン ===== -->
+  <div class="accwrap" id="accwrap"></div>
+
+  <div class="checkbox-msg" id="checkMsg"></div>
+
+  <div class="actionbar">
+    <div class="inner">
+      <div class="status" id="statusTxt">未保存の変更はありません</div>
+      <button class="btn secondary" id="draftBtn">下書き保存</button>
+      <button class="btn primary" id="commitBtn">確定して閲覧画面に反映</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const MARKETS = ["東京","神奈川","徳島","北九州","福岡","長崎","諫早"];
+const SIZES = ["2L","L","M","S","2S"];
+
+// 前日(8/7)のダミーデータ:入力チェックの比較にも使用
+const PREV = {};
+MARKETS.forEach((m,mi)=>{ SIZES.forEach((s,si)=>{
+  PREV[m+"_"+s] = { p: 900 + mi*30 + si*45, q: 40 + ((mi*7+si*3)%60) };
+});});
+
+// ---- マトリクス生成 ----
+const matrix = document.getElementById("matrix");
+let head = "<thead><tr><th></th>";
+SIZES.forEach(s=>{ head += `<th>${s}<small>単価(円/kg) / 数量(<span class="unitlbl">パック</span>)</small></th>`; });
+head += "</tr></thead><tbody>";
+let body = "";
+MARKETS.forEach(m=>{
+  body += `<tr><th class="mkt">${m}</th>`;
+  SIZES.forEach(s=>{
+    const k = m+"_"+s;
+    body += `<td id="td_${k}"><div class="cell">
+      <input class="price" inputmode="numeric" placeholder="円/kg" data-k="${k}" data-t="p">
+      <input class="qty" inputmode="numeric" placeholder="パック" data-k="${k}" data-t="q">
+      <div class="u conv" data-ck="${k}">&nbsp;</div>
+    </div></td>`;
+  });
+  body += "</tr>";
+});
+matrix.innerHTML = head + body + "</tbody>";
+
+// ---- アコーディオン生成(スマホ) ----
+const accwrap = document.getElementById("accwrap");
+MARKETS.forEach((m,i)=>{
+  let rows = `<div class="acchead"><span></span><span>単価(円/kg)</span><span>数量(<span class="unitlbl">パック</span>)</span><span>kg換算</span></div>`;
+  SIZES.forEach(s=>{
+    const k = m+"_"+s;
+    rows += `<div class="accrow"><span class="sz">${s}</span>
+      <input inputmode="numeric" placeholder="単価" data-k="${k}" data-t="p" data-acc="1">
+      <input inputmode="numeric" placeholder="数量" data-k="${k}" data-t="q" data-acc="1">
+      <span class="conv accconv" data-ck="${k}">&nbsp;</span>
+    </div>`;
+  });
+  accwrap.insertAdjacentHTML("beforeend",
+    `<details class="acc"${i===0?" open":""}><summary>${m}<span></span></summary>${rows}</details>`);
+});
+
+// ---- 状態管理(マトリクスとアコーディオンを同期) ----
+const allInputs = [...document.querySelectorAll("input[data-k]")];
+function syncTwin(el){
+  allInputs.forEach(o=>{
+    if(o!==el && o.dataset.k===el.dataset.k && o.dataset.t===el.dataset.t) o.value = el.value;
+  });
+}
+// ---- 数量単位とkg換算 ----
+// 200gパック:5パックで1kg / 3kgバラ:1ケース=3kg
+function unitInfo(){
+  const is200 = document.getElementById("packSel").value === "200gパック";
+  return is200 ? {name:"パック", toKg:q=>q/5} : {name:"ケース", toKg:q=>q*3};
+}
+function fmtKg(v){
+  return (Math.round(v*10)/10).toLocaleString();
+}
+function updateConv(k){
+  const u = unitInfo();
+  const qEl = allInputs.find(x=>x.dataset.k===k && x.dataset.t==="q");
+  const q = Number(qEl.value);
+  const txt = (qEl.value.trim()!=="" && !isNaN(q)) ? `≒ ${fmtKg(u.toKg(q))}kg` : "\u00a0";
+  document.querySelectorAll(`.conv[data-ck="${k}"]`).forEach(c=>c.textContent = txt);
+}
+function updateAllUnits(){
+  const u = unitInfo();
+  document.querySelectorAll(".unitlbl").forEach(el=>el.textContent = u.name);
+  allInputs.filter(x=>x.dataset.t==="q").forEach(x=>{
+    x.placeholder = x.dataset.acc ? "数量" : u.name;
+  });
+  MARKETS.forEach(m=>SIZES.forEach(s=>updateConv(m+"_"+s)));
+}
+
+let dirty = false;
+const statusTxt = document.getElementById("statusTxt");
+allInputs.forEach(el=>{
+  el.addEventListener("input",()=>{
+    syncTwin(el);
+    if(el.dataset.t==="q") updateConv(el.dataset.k);
+    dirty = true;
+    statusTxt.textContent = "未保存の変更があります";
+    el.classList.remove("flag");
+  });
+  // Enterで次のセルへ(Tabと同じ挙動)
+  el.addEventListener("keydown",(e)=>{
+    if(e.key==="Enter"){
+      e.preventDefault();
+      const group = allInputs.filter(x=>!!x.dataset.acc === !!el.dataset.acc);
+      const idx = group.indexOf(el);
+      const next = group[idx+1];
+      if(next) next.focus();
+    }
+  });
+});
+
+// ---- 前日の値をコピー ----
+document.getElementById("copyBtn").addEventListener("click",()=>{
+  allInputs.forEach(el=>{
+    const d = PREV[el.dataset.k];
+    el.value = el.dataset.t==="p" ? d.p : d.q;
+    el.classList.remove("flag");
+  });
+  MARKETS.forEach(m=>SIZES.forEach(s=>updateConv(m+"_"+s)));
+  dirty = true;
+  statusTxt.textContent = "前日(8/7)の値を下書きとして貼り付けました。差分だけ直してください";
+});
+
+// ---- 入力チェック ----
+function runCheck(){
+  let flags = 0;
+  const seen = {};
+  allInputs.forEach(el=>{
+    const k = el.dataset.k;
+    seen[k] = seen[k] || {};
+    seen[k][el.dataset.t] = el.value.trim();
+  });
+  Object.keys(seen).forEach(k=>{
+    const p = seen[k].p, q = seen[k].q;
+    let bad = false;
+    if(q!=="" && p==="") bad = true;                     // 数量のみで単価が空
+    if(p!==""){
+      const prev = PREV[k].p;
+      if(Math.abs(Number(p)-prev)/prev > 0.3) bad = true; // 前日比30%以上の乖離
+    }
+    allInputs.filter(x=>x.dataset.k===k).forEach(x=>{
+      x.classList.toggle("flag", bad);
+    });
+    if(bad) flags++;
+  });
+  return flags;
+}
+const checkMsg = document.getElementById("checkMsg");
+function saveFlow(commit){
+  const flags = runCheck();
+  checkMsg.classList.add("show");
+  if(flags>0){
+    checkMsg.className = "checkbox-msg warn show";
+    checkMsg.innerHTML = `⚠ <b>${flags}件のセル</b>が黄色になっています(前日と単価が大きく違う、または数量のみで単価が空)。FAXと見比べて確認のうえ、もう一度${commit?"「確定」":"「下書き保存」"}を押してください。<br><span style="font-size:11px">※内容が正しい場合はそのまま保存できます(モックでは2回目で保存されます)</span>`;
+    checkMsg.dataset.pending = "1";
+    if(checkMsg.dataset.last === String(commit) && checkMsg.dataset.retry === "1"){ doSave(commit); return; }
+    checkMsg.dataset.retry = "1";
+    checkMsg.dataset.last = String(commit);
+    return;
+  }
+  doSave(commit);
+}
+function doSave(commit){
+  checkMsg.className = "checkbox-msg ok show";
+  checkMsg.dataset.retry = "0";
+  if(commit){
+    checkMsg.innerHTML = "✅ 保存して閲覧画面に反映しました。修正した場合は履歴に記録されています。";
+    statusTxt.textContent = "確定済み(" + nowStr() + ")";
+  }else{
+    checkMsg.innerHTML = "💾 下書きとして保存しました。<b>確定するまで閲覧画面には反映されません。</b>";
+    statusTxt.textContent = "下書き保存済み(" + nowStr() + ")";
+  }
+  dirty = false;
+}
+function nowStr(){
+  const d = new Date();
+  return `${d.getHours()}:${String(d.getMinutes()).padStart(2,"0")}`;
+}
+document.getElementById("draftBtn").addEventListener("click",()=>saveFlow(false));
+document.getElementById("commitBtn").addEventListener("click",()=>saveFlow(true));
+
+// ---- 対象日の切替(過去日=修正モードのデモ) ----
+const daySel = document.getElementById("daySel");
+const dayBadge = document.getElementById("dayBadge");
+const editNote = document.getElementById("editNote");
+const DAY_LABEL = {"0808":["8/8(土)","sat"],"0807":["8/7(金)",""],"0806":["8/6(木)",""],"0805":["8/5(水)",""],"0804":["8/4(火)",""]};
+daySel.addEventListener("change",()=>{
+  const [label,cls] = DAY_LABEL[daySel.value];
+  dayBadge.textContent = label;
+  dayBadge.className = "daybadge " + cls;
+  const isPast = daySel.value !== "0808";
+  editNote.classList.toggle("show", isPast);
+  editNote.innerHTML = `✏️ <b>${label} は確定済みのデータです。</b>セルを直して保存すると閲覧画面に即反映され、修正前後の値・実行者・日時が修正履歴に自動記録されます。`;
+  allInputs.forEach(el=>{
+    if(isPast){
+      const d = PREV[el.dataset.k];
+      el.value = el.dataset.t==="p" ? d.p : d.q;
+    }else{
+      el.value = "";
+    }
+    el.classList.remove("flag");
+  });
+  MARKETS.forEach(m=>SIZES.forEach(s=>updateConv(m+"_"+s)));
+  // 修正済みマークのデモ(8/6のみ)
+  document.querySelectorAll("td.edited").forEach(td=>td.classList.remove("edited"));
+  if(daySel.value==="0806"){
+    document.getElementById("td_徳島_M").classList.add("edited");
+  }
+  statusTxt.textContent = isPast ? "確定済みデータを表示中(修正すると履歴が残ります)" : "未保存の変更はありません";
+  checkMsg.classList.remove("show");
+});
+
+// ---- タブ(見た目のみ) ----
+const tabP = document.getElementById("tabP"), tabC = document.getElementById("tabC");
+const packSel = document.getElementById("packSel");
+tabP.addEventListener("click",()=>{tabP.classList.add("active");tabC.classList.remove("active");packSel.selectedIndex=0;updateAllUnits();});
+tabC.addEventListener("click",()=>{tabC.classList.add("active");tabP.classList.remove("active");packSel.selectedIndex=1;updateAllUnits();});
+packSel.addEventListener("change",updateAllUnits);
+updateAllUnits();
+</script>
+</body>
+</html>

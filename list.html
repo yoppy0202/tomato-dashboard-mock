@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>データ一覧(モック)</title>
+<style>
+  :root{
+    --ink:#232323;
+    --sub:#6f6f6f;
+    --line:#e3e2df;
+    --paper:#ffffff;
+    --floor:#faf9f7;
+    --vine:#4c7a52;
+    --vine-deep:#33583a;
+    --tomato:#c94a3c;
+    --sat:#2f6fb0;
+    --sat-bg:#eaf2fa;
+    --hol:#c94a3c;
+    --hol-bg:#fbebe9;
+    --warn-bg:#fbf1e1;
+    --admin:#8a6d1f;
+    --admin-bg:#f6efd9;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;background:#efeee9;
+    font-family:"Hiragino Sans","Yu Gothic UI","BIZ UDPGothic",system-ui,-apple-system,sans-serif;
+    color:var(--ink);-webkit-font-smoothing:antialiased;
+  }
+  .phone{
+    max-width:428px;margin:0 auto;background:var(--paper);
+    min-height:100vh;box-shadow:0 0 40px rgba(0,0,0,0.12);
+    padding-bottom:60px;
+  }
+  .mockbanner{
+    background:#fff5cc;color:#7a5c00;font-size:11px;text-align:center;padding:6px 10px;
+  }
+  .topbar{
+    padding:14px 16px 12px 16px;position:sticky;top:0;background:var(--paper);
+    z-index:20;border-bottom:1px solid var(--line);
+  }
+  .brandrow{display:flex;align-items:baseline;justify-content:space-between;}
+  .brand{font-size:15px;font-weight:700;letter-spacing:.02em;}
+  .brand .dot{
+    display:inline-block;width:7px;height:7px;border-radius:50%;
+    background:var(--tomato);margin-right:6px;vertical-align:middle;
+  }
+  .backlink{font-size:11.5px;color:var(--sub);text-decoration:none;}
+  .pagetitle{font-size:13px;font-weight:700;color:var(--vine-deep);margin-top:8px;}
+
+  /* デモ用:管理者表示スイッチ */
+  .demoswitch{
+    display:flex;align-items:center;gap:6px;
+    margin:10px 16px 0 16px;
+    background:var(--admin-bg);border:1px dashed var(--admin);
+    border-radius:8px;padding:6px 10px;
+    font-size:11px;color:var(--admin);
+  }
+
+  section{padding:12px 16px 0 16px;}
+  h3{
+    font-size:12px;color:var(--sub);font-weight:700;
+    margin:6px 0 8px 0;letter-spacing:.03em;
+  }
+  select,.btn{
+    font-family:inherit;font-size:13px;font-weight:700;color:var(--ink);
+    background:var(--floor);border:1px solid var(--line);border-radius:8px;
+    padding:8px 10px;
+  }
+  .btn{cursor:pointer;}
+  .btn:active{transform:translateY(1px);}
+
+  /* ---- 期間選択 ---- */
+  .period{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+  .period .tilde{color:var(--sub);}
+  .rangechips{margin-top:8px;font-size:12px;color:var(--sub);}
+  .chip{
+    display:inline-block;font-weight:700;border-radius:8px;
+    padding:2px 8px;border:1px solid var(--line);background:var(--floor);
+  }
+  .chip.sat{color:var(--sat);background:var(--sat-bg);border-color:#bcd4ec;}
+  .chip.hol{color:var(--hol);background:var(--hol-bg);border-color:#eec6c1;}
+
+  /* ---- フィルタ ---- */
+  details.filters{
+    margin-top:12px;border:1px solid var(--line);border-radius:12px;overflow:hidden;
+  }
+  details.filters summary{
+    list-style:none;cursor:pointer;background:var(--floor);
+    padding:10px 14px;font-size:13px;font-weight:700;
+    display:flex;justify-content:space-between;align-items:center;
+  }
+  details.filters summary::after{content:"▾";color:var(--sub);}
+  details.filters[open] summary::after{content:"▴";}
+  .fgroup{padding:8px 14px 4px 14px;border-top:1px solid var(--line);}
+  .fgroup .ghead{
+    display:flex;justify-content:space-between;align-items:center;
+    font-size:11px;color:var(--sub);font-weight:700;margin-bottom:6px;
+  }
+  .minibtn{
+    font-family:inherit;font-size:10.5px;color:var(--vine-deep);
+    background:#eef4ee;border:1px solid #cfe1d1;border-radius:12px;
+    padding:2px 8px;cursor:pointer;margin-left:6px;
+  }
+  .checks{display:flex;flex-wrap:wrap;gap:6px 4px;padding-bottom:6px;}
+  .checks label{
+    display:inline-flex;align-items:center;gap:4px;
+    font-size:12.5px;border:1px solid var(--line);border-radius:16px;
+    padding:5px 10px;background:#fff;cursor:pointer;
+  }
+  .checks input{accent-color:var(--vine);}
+  .checks label:has(input:checked){
+    background:#eef4ee;border-color:var(--vine);color:var(--vine-deep);font-weight:700;
+  }
+  .applyrow{padding:10px 14px;border-top:1px solid var(--line);text-align:right;}
+  .btn.primary{background:var(--vine);border-color:var(--vine-deep);color:#fff;}
+
+  /* ---- 結果 ---- */
+  .resulthead{
+    display:flex;justify-content:space-between;align-items:center;
+    margin-top:14px;
+  }
+  .count{font-size:12px;color:var(--sub);}
+  .csvbtn{
+    display:inline-flex;align-items:center;gap:6px;
+    background:#fff;border:1.5px solid var(--vine);color:var(--vine-deep);
+  }
+  .csvnote{font-size:10px;color:var(--sub);text-align:right;margin-top:4px;}
+
+  .tablewrap{overflow-x:auto;margin-top:8px;border:1px solid var(--line);border-radius:10px;}
+  table.list{border-collapse:collapse;width:100%;min-width:440px;font-size:12px;}
+  .list td .unit{font-size:9px;color:var(--sub);margin-left:1px;}
+  .list td.kg{color:var(--sub);font-size:11.5px;}
+  .list th,.list td{padding:7px 6px;border-bottom:1px solid var(--line);text-align:right;white-space:nowrap;}
+  .list th{background:var(--floor);font-size:10.5px;color:var(--sub);position:sticky;top:0;}
+  .list td:nth-child(1),.list th:nth-child(1),
+  .list td:nth-child(2),.list th:nth-child(2),
+  .list td:nth-child(3),.list th:nth-child(3){text-align:left;}
+  .list td.date.sat{color:var(--sat);font-weight:700;}
+  .list td.date.hol{color:var(--hol);font-weight:700;}
+  .price{font-weight:700;}
+  .editedmark{
+    display:inline-block;font-size:8.5px;color:var(--admin);
+    background:var(--admin-bg);border-radius:4px;padding:0 3px;
+    margin-left:3px;cursor:pointer;vertical-align:1px;
+  }
+  .editbtn{
+    display:none;
+    font-family:inherit;font-size:10.5px;color:var(--admin);
+    background:var(--admin-bg);border:1px solid var(--admin);
+    border-radius:6px;padding:2px 7px;cursor:pointer;
+  }
+  body.adminview .editbtn{display:inline-block;}
+
+  /* ---- ページ分割 ---- */
+  .pager{
+    display:flex;justify-content:center;align-items:center;gap:10px;
+    margin:14px 0 4px 0;font-size:12.5px;
+  }
+  .pager button{
+    font-family:inherit;background:var(--floor);border:1px solid var(--line);
+    border-radius:8px;padding:6px 12px;font-size:12.5px;cursor:pointer;
+  }
+  .pager button:disabled{opacity:.4;cursor:default;}
+  .pagernote{font-size:10px;color:var(--sub);text-align:center;margin-bottom:8px;}
+
+  .toast{
+    position:fixed;left:50%;bottom:24px;transform:translateX(-50%);
+    background:var(--ink);color:#fff;font-size:12px;border-radius:20px;
+    padding:9px 16px;opacity:0;transition:opacity .25s;pointer-events:none;
+    max-width:90%;text-align:center;z-index:50;
+  }
+  .toast.show{opacity:.94;}
+</style>
+</head>
+<body>
+<div class="phone">
+  <div class="mockbanner">⚠ これは検討用のモック画面です。数値はすべてダミーで、本番の仕様・デザインとは異なります。</div>
+  <div class="topbar">
+    <div class="brandrow">
+      <div class="brand"><span class="dot"></span>ミニトマト部会 出荷情報</div>
+      <a class="backlink" href="index.html">← ダッシュボード</a>
+    </div>
+    <div class="pagetitle">📋 データ一覧</div>
+  </div>
+
+  <div class="demoswitch">
+    <input type="checkbox" id="adminToggle">
+    <label for="adminToggle">【デモ用】管理者としてログインした場合の表示(編集ボタンが現れます)</label>
+  </div>
+
+  <section>
+    <h3>期間</h3>
+    <div class="period">
+      <select id="fromSel"></select>
+      <span class="tilde">〜</span>
+      <select id="toSel"></select>
+    </div>
+    <div class="rangechips" id="rangeChips"></div>
+
+    <details class="filters">
+      <summary>絞り込み <span id="filterSummary" style="font-weight:400;font-size:11px;color:var(--sub)"></span></summary>
+
+      <div class="fgroup">
+        <div class="ghead">選果方法</div>
+        <div class="checks" data-g="method">
+          <label><input type="checkbox" value="個人" checked>個人選果</label>
+          <label><input type="checkbox" value="共同" checked>共同選果</label>
+        </div>
+      </div>
+
+      <div class="fgroup">
+        <div class="ghead">出荷規格(荷姿)</div>
+        <div class="checks" data-g="pack">
+          <label><input type="checkbox" value="200gパック" checked>200gパック</label>
+          <label><input type="checkbox" value="3kgバラ" checked>3kgバラ</label>
+        </div>
+      </div>
+
+      <div class="fgroup">
+        <div class="ghead">市場
+          <span>
+            <button class="minibtn" data-all="mkt">全選択</button>
+            <button class="minibtn" data-none="mkt">全解除</button>
+          </span>
+        </div>
+        <div class="checks" data-g="mkt" id="mktChecks"></div>
+      </div>
+
+      <div class="fgroup">
+        <div class="ghead">サイズ</div>
+        <div class="checks" data-g="size" id="sizeChecks"></div>
+      </div>
+
+      <div class="applyrow">
+        <button class="btn primary" id="applyBtn">この条件で表示</button>
+      </div>
+    </details>
+
+    <div class="resulthead">
+      <span class="count" id="countTxt"></span>
+      <button class="btn csvbtn" id="csvBtn">⬇ CSVダウンロード</button>
+    </div>
+    <div class="csvnote">※絞り込み条件の全件を出力します(Excelでそのまま開けます)</div>
+
+    <div class="tablewrap">
+      <table class="list">
+        <thead>
+          <tr><th>日付</th><th>選果</th><th>市場</th><th>荷姿</th><th>サイズ</th><th>単価<br>(円/kg)</th><th>数量<br>(ﾊﾟｯｸ/ｹｰｽ)</th><th>kg<br>換算</th><th></th></tr>
+        </thead>
+        <tbody id="tbody"></tbody>
+      </table>
+    </div>
+
+    <div class="pager">
+      <button id="prevBtn">◀ 前へ</button>
+      <span id="pageTxt"></span>
+      <button id="nextBtn">次へ ▶</button>
+    </div>
+    <div class="pagernote">画面は50件ずつ表示。CSVには全件が含まれます</div>
+  </section>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+const MARKETS = ["東京","神奈川","徳島","北九州","福岡","長崎","諫早"];
+const SIZES = ["2L","L","M","S","2S"];
+const HOLIDAYS = ["8/11"]; // 山の日(祝)
+
+// ---- 日付ユーティリティ ----
+const WD = ["日","月","火","水","木","金","土"];
+function dateList(){
+  const out = [];
+  for(let d=1; d<=8; d++){
+    const dt = new Date(2026,7,d); // 8月
+    const md = `8/${d}`;
+    const w = dt.getDay();
+    let cls = "";
+    if(w===6) cls = "sat";
+    if(w===0 || HOLIDAYS.includes(md)) cls = "hol";
+    out.push({v:md, label:`${md}(${WD[w]})`, cls});
+  }
+  return out;
+}
+const DATES = dateList();
+
+// ---- 期間プルダウン ----
+const fromSel = document.getElementById("fromSel");
+const toSel = document.getElementById("toSel");
+DATES.forEach(d=>{
+  fromSel.insertAdjacentHTML("beforeend",`<option value="${d.v}">${d.label}</option>`);
+  toSel.insertAdjacentHTML("beforeend",`<option value="${d.v}">${d.label}</option>`);
+});
+fromSel.value = "8/4";
+toSel.value = "8/8";
+function renderRangeChips(){
+  const f = DATES.find(d=>d.v===fromSel.value);
+  const t = DATES.find(d=>d.v===toSel.value);
+  document.getElementById("rangeChips").innerHTML =
+    `表示中: <span class="chip ${f.cls}">${f.label}</span> 〜 <span class="chip ${t.cls}">${t.label}</span>` +
+    (f.v===t.v ? "(単日)" : "");
+}
+
+// ---- フィルタ ----
+const mktChecks = document.getElementById("mktChecks");
+MARKETS.forEach(m=>{
+  mktChecks.insertAdjacentHTML("beforeend",`<label><input type="checkbox" value="${m}" checked>${m}</label>`);
+});
+const sizeChecks = document.getElementById("sizeChecks");
+SIZES.forEach(s=>{
+  sizeChecks.insertAdjacentHTML("beforeend",`<label><input type="checkbox" value="${s}" checked>${s}</label>`);
+});
+document.querySelectorAll(".minibtn").forEach(b=>{
+  b.addEventListener("click",(e)=>{
+    e.preventDefault();
+    const g = b.dataset.all || b.dataset.none;
+    document.querySelectorAll(`[data-g="${g}"] input`).forEach(c=>c.checked = !!b.dataset.all);
+  });
+});
+function checked(g){
+  return [...document.querySelectorAll(`[data-g="${g}"] input:checked`)].map(c=>c.value);
+}
+
+// ---- ダミーデータ生成(固定シード風) ----
+const ROWS = [];
+DATES.forEach((d,di)=>{
+  ["個人","共同"].forEach((me,mei)=>{
+    const pack = me==="個人" ? "200gパック" : "3kgバラ";
+    MARKETS.forEach((m,mi)=>{
+      SIZES.forEach((s,si)=>{
+        // 一部欠測にして「出荷なし=行なし」を表現
+        if((di+mi+si+mei)%9===0) return;
+        const p = 880 + mi*28 + si*42 + di*6 + mei*35;
+        const q = 30 + ((di*11+mi*7+si*5+mei*13)%70); // 実際の個数(パック数/ケース数)
+        const unit = pack==="200gパック" ? "パック" : "ケース";
+        const kg = pack==="200gパック" ? q/5 : q*3;   // 200g:5パック=1kg / 3kg:1ケース=3kg
+        const edited = (d.v==="8/6" && m==="徳島" && s==="M" && me==="個人");
+        ROWS.push({date:d, method:me, pack, mkt:m, size:s, p, q, unit, kg, edited});
+      });
+    });
+  });
+});
+
+function fmtKg(v){
+  return (Math.round(v*10)/10).toLocaleString();
+}
+
+// ---- 表示 ----
+const PAGE = 50;
+let page = 1;
+let current = [];
+function applyFilter(){
+  const fi = DATES.findIndex(d=>d.v===fromSel.value);
+  const ti = DATES.findIndex(d=>d.v===toSel.value);
+  const [lo,hi] = fi<=ti ? [fi,ti] : [ti,fi];
+  const ms = checked("method"), ps = checked("pack"), ks = checked("mkt"), ss = checked("size");
+  current = ROWS.filter(r=>{
+    const di = DATES.indexOf(r.date);
+    return di>=lo && di<=hi && ms.includes(r.method) && ps.includes(r.pack)
+      && ks.includes(r.mkt) && ss.includes(r.size);
+  });
+  page = 1;
+  renderRangeChips();
+  renderTable();
+  const parts = [];
+  if(ms.length<2) parts.push(ms.join("・"));
+  if(ps.length<2) parts.push(ps.join("・"));
+  if(ks.length<7) parts.push(`市場${ks.length}件`);
+  if(ss.length<5) parts.push(`サイズ${ss.length}件`);
+  document.getElementById("filterSummary").textContent = parts.length? "─ "+parts.join(" / ") : "";
+}
+function renderTable(){
+  const tbody = document.getElementById("tbody");
+  const start = (page-1)*PAGE;
+  const rows = current.slice(start, start+PAGE);
+  tbody.innerHTML = rows.map(r=>`
+    <tr>
+      <td class="date ${r.date.cls}">${r.date.label}</td>
+      <td>${r.method}</td>
+      <td>${r.mkt}</td>
+      <td>${r.pack==="200gパック"?"200g":"3kg"}</td>
+      <td>${r.size}</td>
+      <td class="price">${r.p.toLocaleString()}${r.edited?'<span class="editedmark" data-tip="1">修正済</span>':''}</td>
+      <td>${r.q}<span class="unit">${r.unit==="パック"?"ﾊﾟｯｸ":"ｹｰｽ"}</span></td>
+      <td class="kg">${fmtKg(r.kg)}</td>
+      <td><button class="editbtn">編集</button></td>
+    </tr>`).join("");
+  const total = current.length;
+  const pages = Math.max(1, Math.ceil(total/PAGE));
+  document.getElementById("countTxt").textContent = `該当 ${total.toLocaleString()}件`;
+  document.getElementById("pageTxt").textContent = `${page} / ${pages} ページ`;
+  document.getElementById("prevBtn").disabled = page<=1;
+  document.getElementById("nextBtn").disabled = page>=pages;
+}
+document.getElementById("prevBtn").addEventListener("click",()=>{page--;renderTable();window.scrollTo({top:0});});
+document.getElementById("nextBtn").addEventListener("click",()=>{page++;renderTable();window.scrollTo({top:0});});
+document.getElementById("applyBtn").addEventListener("click",()=>{
+  applyFilter();
+  document.querySelector("details.filters").open = false;
+});
+fromSel.addEventListener("change",applyFilter);
+toSel.addEventListener("change",applyFilter);
+
+// ---- トースト ----
+const toast = document.getElementById("toast");
+let toastTimer;
+function showToast(msg){
+  toast.textContent = msg;
+  toast.classList.add("show");
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(()=>toast.classList.remove("show"), 2600);
+}
+
+// ---- CSV(モック:実際にダウンロードされる) ----
+document.getElementById("csvBtn").addEventListener("click",()=>{
+  const head = "日付,選果方法,荷姿,市場,サイズ,単価(円/kg),数量,数量単位,kg換算\n";
+  const lines = current.map(r=>[r.date.label,r.method,r.pack,r.mkt,r.size,r.p,r.q,r.unit,Math.round(r.kg*10)/10].join(",")).join("\n");
+  const bom = new Uint8Array([0xEF,0xBB,0xBF]); // UTF-8 BOM(Excel文字化け防止)
+  const blob = new Blob([bom, head+lines], {type:"text/csv"});
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = "shukka_data.csv";
+  a.click();
+  showToast(`CSVをダウンロードしました(${current.length}件・画面のページ分割に関係なく全件)`);
+});
+
+// ---- 修正済みマーク:タップで修正日時 ----
+document.addEventListener("click",(e)=>{
+  if(e.target.dataset.tip) showToast("8/7 9:12 に管理者が修正(修正前: 1,020円)");
+  if(e.target.classList.contains("editbtn")) showToast("(モック)管理者は入力画面でこの日のデータを直接修正できます");
+});
+
+// ---- 管理者表示トグル ----
+document.getElementById("adminToggle").addEventListener("change",(e)=>{
+  document.body.classList.toggle("adminview", e.target.checked);
+});
+
+applyFilter();
+</script>
+</body>
+</html>
