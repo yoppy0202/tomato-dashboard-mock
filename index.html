@@ -402,7 +402,15 @@
     color:#4a4238;
   }
   .announce-item:first-of-type{border-top:none;}
-  .announce-date{font-size:10px;color:#9c8b6f;display:block;margin-bottom:1px;}
+  .announce-meta{display:flex;align-items:center;gap:6px;margin-bottom:3px;}
+  .announce-date{font-size:10px;color:#9c8b6f;}
+  .acat{
+    font-size:9.5px;font-weight:700;border-radius:10px;padding:1px 7px;
+    display:inline-block;margin-bottom:3px;
+  }
+  .acat.cat-all{color:#5a5a5a;background:#efeeea;border:1px solid #ddd9d2;}
+  .acat.cat-kojin{color:var(--vine-deep);background:#eaf3ea;border:1px solid #c9dfcb;}
+  .acat.cat-kyodo{color:var(--up);background:#eaf2fa;border:1px solid #c3d8ec;}
 
   .foot{
     text-align:center;
@@ -427,7 +435,7 @@
     <span style="color:#c9bd93;">|</span>
     <a href="list.html" style="color:#8a6d1f;font-weight:700;">データ一覧</a>
     <span style="color:#c9bd93;">|</span>
-    <a href="announce.html" style="color:#8a6d1f;font-weight:700;">お知らせ投稿</a>
+    <a href="markets.html" style="color:#8a6d1f;font-weight:700;">市場の管理</a>
   </div>
   <div class="topbar">
     <div class="brandrow">
@@ -503,17 +511,26 @@
 
   <!-- ===== Announcements ===== -->
   <div class="announce">
-    <div class="announce-head">📣 部会からのお知らせ</div>
+    <div class="announce-head">📣 お知らせ</div>
     <div class="announce-item">
-      <span class="announce-date">7/28</span>
+      <div class="announce-meta">
+        <span class="announce-date">7/28</span>
+        <span class="acat cat-all">全体</span>
+      </div>
       来週月曜は集出荷場のメンテナンスのため、搬入受付を1時間繰り上げます(7:00〜)。
     </div>
     <div class="announce-item">
-      <span class="announce-date">7/22</span>
+      <div class="announce-meta">
+        <span class="announce-date">7/22</span>
+        <span class="acat cat-kojin">個人選果</span>
+      </div>
       2S・S規格の需要が高まっています。選別時のご協力をお願いします。
     </div>
     <div class="announce-item">
-      <span class="announce-date">7/15</span>
+      <div class="announce-meta">
+        <span class="announce-date">7/15</span>
+        <span class="acat cat-all">全体</span>
+      </div>
       来月の部会総会は8/28(金)19時、公民館にて開催予定です。
     </div>
   </div>

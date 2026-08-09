@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>管理画面:市場の管理(モック)</title>
+<style>
+  :root{
+    --ink:#232323;
+    --sub:#6f6f6f;
+    --line:#e3e2df;
+    --paper:#ffffff;
+    --floor:#faf9f7;
+    --vine:#4c7a52;
+    --vine-deep:#33583a;
+    --tomato:#c94a3c;
+    --tomato-deep:#a63a2f;
+    --sat:#2f6fb0;
+    --up:#1f5fa8;
+    --hol:#c94a3c;
+    --warn:#c8862c;
+    --warn-bg:#fbf1e1;
+    --admin:#8a6d1f;
+    --admin-bg:#f6efd9;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;background:#efeee9;
+    font-family:"Hiragino Sans","Yu Gothic UI","BIZ UDPGothic",system-ui,-apple-system,sans-serif;
+    color:var(--ink);-webkit-font-smoothing:antialiased;
+  }
+  .sheet{
+    max-width:640px;margin:0 auto;background:var(--paper);
+    min-height:100vh;box-shadow:0 0 40px rgba(0,0,0,0.12);padding-bottom:40px;
+  }
+  .mockbanner{background:#fff5cc;color:#7a5c00;font-size:11px;text-align:center;padding:6px 10px;}
+  .adminband{
+    display:flex;align-items:center;justify-content:space-between;gap:8px;
+    background:var(--admin-bg);color:var(--admin);border-bottom:2px solid var(--admin);
+    font-size:12px;font-weight:700;padding:6px 16px;
+  }
+  .adminband .who{font-weight:400;font-size:11px;}
+  .topbar{padding:14px 16px 12px 16px;border-bottom:1px solid var(--line);}
+  .brandrow{display:flex;align-items:baseline;justify-content:space-between;}
+  .brand{font-size:15px;font-weight:700;letter-spacing:.02em;}
+  .brand .dot{
+    display:inline-block;width:7px;height:7px;border-radius:50%;
+    background:var(--tomato);margin-right:6px;vertical-align:middle;
+  }
+  .backlink{font-size:11.5px;color:var(--sub);text-decoration:none;}
+  .pagetitle{font-size:13px;font-weight:700;color:var(--vine-deep);margin-top:8px;}
+
+  section{padding:14px 16px 0 16px;}
+  h3{font-size:12px;color:var(--sub);font-weight:700;margin:4px 0 8px 0;letter-spacing:.03em;}
+  .lead{font-size:11.5px;color:var(--sub);line-height:1.8;margin-bottom:10px;}
+  .lead b{color:var(--ink);}
+
+  .btn{
+    font-family:inherit;font-size:13px;font-weight:700;color:var(--ink);
+    background:var(--floor);border:1px solid var(--line);border-radius:8px;
+    padding:9px 14px;cursor:pointer;
+  }
+  .btn:active{transform:translateY(1px);}
+  .btn.primary{background:var(--vine);border-color:var(--vine-deep);color:#fff;}
+  .btn.danger{color:var(--tomato-deep);border-color:#e0b7b1;background:#fdf4f3;}
+  .btn.small{font-size:11.5px;padding:5px 11px;}
+
+  /* ---- 市場リスト ---- */
+  .mkt{
+    display:flex;align-items:center;gap:10px;
+    border:1px solid var(--line);border-radius:10px;
+    padding:9px 10px 9px 12px;margin-bottom:8px;background:#fff;
+  }
+  .mkt.off{background:var(--floor);border-style:dashed;}
+  .mkt.off .mname{color:var(--sub);}
+  .ord{display:flex;flex-direction:column;gap:2px;}
+  .ordbtn{
+    font-family:inherit;font-size:10px;line-height:1;color:var(--sub);
+    background:var(--floor);border:1px solid var(--line);border-radius:5px;
+    width:24px;height:17px;cursor:pointer;padding:0;
+  }
+  .ordbtn:disabled{opacity:.3;cursor:default;}
+  .mname{font-size:14px;font-weight:700;flex:1;}
+  .mmeta{font-size:10.5px;color:var(--sub);font-weight:400;display:block;margin-top:2px;}
+  .statebadge{font-size:10px;font-weight:700;border-radius:12px;padding:2px 9px;}
+  .statebadge.on{color:var(--vine-deep);background:#eef4ee;border:1px solid #cfe1d1;}
+  .statebadge.off{color:var(--sub);background:#efeeea;border:1px solid #ddd9d2;}
+
+  /* ---- 追加フォーム ---- */
+  .addcard{
+    border:1px solid var(--line);border-radius:12px;padding:12px;margin-top:4px;
+    display:flex;gap:8px;align-items:center;flex-wrap:wrap;
+  }
+  .addcard input{
+    font-family:inherit;font-size:13.5px;flex:1;min-width:150px;
+    border:1px solid var(--line);border-radius:8px;padding:9px 10px;background:#fff;
+  }
+  .addcard input:focus{outline:2px solid var(--vine);outline-offset:-1px;}
+
+  /* ---- 影響範囲の説明 ---- */
+  .impact{
+    background:#eef4ee;border:1px solid #cfe1d1;border-radius:10px;
+    padding:10px 12px;font-size:11.5px;color:var(--vine-deep);line-height:1.85;
+  }
+  .impact b{display:block;margin-bottom:3px;}
+  .impact ul{margin:4px 0 0 0;padding-left:18px;}
+
+  /* ---- 変更履歴 ---- */
+  .logitem{
+    display:flex;gap:10px;align-items:flex-start;
+    border-bottom:1px solid var(--line);padding:8px 2px;font-size:12px;line-height:1.6;
+  }
+  .logitem:last-child{border-bottom:none;}
+  .logtime{font-size:10.5px;color:var(--sub);white-space:nowrap;min-width:78px;}
+  .logbody b{font-weight:700;}
+  .logwho{font-size:10.5px;color:var(--sub);}
+
+  /* ---- モーダル ---- */
+  .modalbg{
+    display:none;position:fixed;inset:0;z-index:60;background:rgba(30,30,28,.45);
+    align-items:center;justify-content:center;padding:20px;
+  }
+  .modalbg.show{display:flex;}
+  .modal{
+    background:#fff;border-radius:14px;max-width:400px;width:100%;
+    padding:20px 20px 16px 20px;box-shadow:0 12px 40px rgba(0,0,0,.25);
+  }
+  .modal .mtitle{font-size:14.5px;font-weight:700;margin-bottom:10px;}
+  .modal .mbody{font-size:13px;line-height:1.8;}
+  .modal .keeplist{
+    background:var(--floor);border:1px solid var(--line);border-radius:8px;
+    padding:9px 11px;font-size:12px;line-height:1.8;margin:9px 0;
+  }
+  .modal .keeplist .ok{color:var(--vine-deep);}
+  .modal .keeplist .hide{color:var(--sub);}
+  .modal .mnote{font-size:11px;color:var(--sub);margin-top:6px;line-height:1.7;}
+  .modal .mbtns{display:flex;gap:10px;justify-content:flex-end;margin-top:14px;}
+
+  .toast{
+    position:fixed;left:50%;bottom:24px;transform:translateX(-50%);
+    background:var(--ink);color:#fff;font-size:12px;border-radius:20px;
+    padding:9px 16px;opacity:0;transition:opacity .25s;pointer-events:none;
+    max-width:90%;text-align:center;z-index:80;line-height:1.6;
+  }
+  .toast.show{opacity:.94;}
+</style>
+</head>
+<body>
+<div class="sheet">
+  <div class="mockbanner">⚠ これは検討用のモック画面です。内容はすべてダミーで、本番の仕様・デザインとは異なります。</div>
+  <div class="adminband">
+    <span>🔑 管理モード ─ 市場の管理</span>
+    <span class="who">ログイン中:山田(管理者) ・ 操作はすべて記録されます</span>
+  </div>
+
+  <div class="topbar">
+    <div class="brandrow">
+      <div class="brand"><span class="dot"></span>ミニトマト部会 出荷情報</div>
+      <a class="backlink" href="index.html">← TOPへ戻る</a>
+    </div>
+    <div class="pagetitle">🏢 市場の管理</div>
+  </div>
+
+  <section>
+    <div class="lead">
+      出荷先の市場を追加したり、取引が終了した市場を一覧から外したりできます。<br>
+      ここでの並び順が、<b>ダッシュボード・入力画面・データ一覧のすべてに反映</b>されます。
+    </div>
+
+    <div id="mktList"></div>
+
+    <h3 style="margin-top:14px;">市場を追加</h3>
+    <div class="addcard">
+      <input id="newName" placeholder="市場名(例:佐世保)" maxlength="20">
+      <button class="btn primary" id="addBtn">追加する</button>
+    </div>
+    <div class="lead" style="margin-top:6px;">
+      追加した市場は、その日以降の入力画面・一覧の絞り込みにすぐ表示されます。
+    </div>
+  </section>
+
+  <section>
+    <h3>取り扱いをやめた市場について</h3>
+    <div class="impact">
+      <b>過去のデータは消えません</b>
+      「一覧から外す」を選んでも、その市場の出荷実績・単価は保存されたままです。
+      <ul>
+        <li>入力画面・ダッシュボード・絞り込みの選択肢からは表示されなくなります</li>
+        <li>データ一覧で過去の期間を選べば、これまでどおり表示・CSV出力できます</li>
+        <li>取引が再開したら「一覧に戻す」でいつでも元に戻せます</li>
+      </ul>
+    </div>
+  </section>
+
+  <section>
+    <h3>市場の変更履歴</h3>
+    <div class="lead" style="margin-bottom:4px;">
+      市場の追加・並べ替え・表示の切り替えはすべて記録されます。データの修正履歴は市場ごとに絞り込んで確認できます。
+    </div>
+    <div id="logList"></div>
+  </section>
+</div>
+
+<!-- 一覧から外す確認 -->
+<div class="modalbg" id="offBg">
+  <div class="modal">
+    <div class="mtitle" id="offTitle">この市場を一覧から外しますか?</div>
+    <div class="mbody" id="offBody"></div>
+    <div class="keeplist">
+      <div class="ok">✅ 残るもの:過去の出荷実績・単価・修正履歴</div>
+      <div class="hide">➖ 表示されなくなるもの:入力画面の列、ダッシュボード、絞り込みの選択肢</div>
+    </div>
+    <div class="mnote">データは削除されません。取引が再開したらいつでも一覧に戻せます。この操作は記録されます。</div>
+    <div class="mbtns">
+      <button class="btn" id="offCancel">やめる</button>
+      <button class="btn danger" id="offOk">一覧から外す</button>
+    </div>
+  </div>
+</div>
+
+<!-- 追加確認 -->
+<div class="modalbg" id="addBg">
+  <div class="modal">
+    <div class="mtitle">この市場を追加しますか?</div>
+    <div class="mbody" id="addBody"></div>
+    <div class="mnote">追加すると、入力画面・ダッシュボード・データ一覧の絞り込みに表示されます。並び順は一覧で入れ替えできます。</div>
+    <div class="mbtns">
+      <button class="btn" id="addCancel">やめる</button>
+      <button class="btn primary" id="addOk">追加する</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const $ = id => document.getElementById(id);
+
+let markets = [
+  { id:1, name:"東京",   active:true,  since:"2023/04" },
+  { id:2, name:"神奈川", active:true,  since:"2023/04" },
+  { id:3, name:"徳島",   active:true,  since:"2023/04" },
+  { id:4, name:"北九州", active:true,  since:"2023/04" },
+  { id:5, name:"福岡",   active:true,  since:"2023/04" },
+  { id:6, name:"長崎",   active:true,  since:"2023/04" },
+  { id:7, name:"諫早",   active:true,  since:"2023/04" },
+  { id:8, name:"大分",   active:false, since:"2023/04", until:"2025/09" },
+];
+let nextId = 9;
+
+let logs = [
+  { t:"2025/09/30 17:20", body:"<b>大分</b>を一覧から外しました(過去データは保持)", who:"山田" },
+  { t:"2025/04/02 09:05", body:"<b>諫早</b>の並び順を7番目に変更しました", who:"佐藤" },
+  { t:"2023/04/01 10:00", body:"初期設定として7市場を登録しました", who:"山田" },
+];
+
+const toast = $("toast");
+let toastTimer;
+function showToast(msg){
+  toast.innerHTML = msg;
+  toast.classList.add("show");
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(()=>toast.classList.remove("show"), 3600);
+}
+function now(){
+  const d = new Date();
+  const p = n => String(n).padStart(2,"0");
+  return `${d.getFullYear()}/${p(d.getMonth()+1)}/${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
+}
+function addLog(body){
+  logs.unshift({ t: now(), body, who:"山田" });
+  renderLogs();
+}
+
+// ---- 市場リスト ----
+function renderMarkets(){
+  const activeIdx = markets.map((m,i)=>m.active?i:-1).filter(i=>i>=0);
+  $("mktList").innerHTML = markets.map((m,i)=>{
+    const isFirstActive = m.active && i === activeIdx[0];
+    const isLastActive  = m.active && i === activeIdx[activeIdx.length-1];
+    const meta = m.active
+      ? `${m.since}から出荷`
+      : `${m.since}〜${m.until} の実績を保持中`;
+    return `<div class="mkt ${m.active?'':'off'}">
+      <div class="ord">
+        <button class="ordbtn" data-up="${m.id}" ${(!m.active||isFirstActive)?'disabled':''}>▲</button>
+        <button class="ordbtn" data-down="${m.id}" ${(!m.active||isLastActive)?'disabled':''}>▼</button>
+      </div>
+      <div class="mname">${m.name}<span class="mmeta">${meta}</span></div>
+      <span class="statebadge ${m.active?'on':'off'}">${m.active?'表示中':'一覧から除外'}</span>
+      ${m.active
+        ? `<button class="btn small danger" data-off="${m.id}">一覧から外す</button>`
+        : `<button class="btn small" data-on="${m.id}">一覧に戻す</button>`}
+    </div>`;
+  }).join("");
+
+  document.querySelectorAll("[data-up]").forEach(b=>b.addEventListener("click",()=>move(+b.dataset.up,-1)));
+  document.querySelectorAll("[data-down]").forEach(b=>b.addEventListener("click",()=>move(+b.dataset.down,1)));
+  document.querySelectorAll("[data-off]").forEach(b=>b.addEventListener("click",()=>askOff(+b.dataset.off)));
+  document.querySelectorAll("[data-on]").forEach(b=>b.addEventListener("click",()=>turnOn(+b.dataset.on)));
+}
+
+// ---- 並べ替え(表示中の市場同士で入れ替え) ----
+function move(id, dir){
+  const i = markets.findIndex(m=>m.id===id);
+  let j = i + dir;
+  while(j>=0 && j<markets.length && !markets[j].active) j += dir; // 除外中は飛ばす
+  if(j<0 || j>=markets.length) return;
+  [markets[i], markets[j]] = [markets[j], markets[i]];
+  renderMarkets();
+  const pos = markets.filter(m=>m.active).findIndex(m=>m.id===id) + 1;
+  addLog(`<b>${markets.find(m=>m.id===id).name}</b>の並び順を${pos}番目に変更しました`);
+  showToast("並び順を変更しました。ダッシュボード・入力画面・データ一覧に反映されます");
+}
+
+// ---- 一覧から外す ----
+let offTarget = null;
+function askOff(id){
+  offTarget = id;
+  const m = markets.find(x=>x.id===id);
+  $("offTitle").textContent = `「${m.name}」を一覧から外しますか?`;
+  $("offBody").innerHTML = `${m.since}からの出荷実績があります。今後の入力・表示の対象から外しますが、<b>これまでのデータはそのまま残ります</b>。`;
+  $("offBg").classList.add("show");
+}
+$("offCancel").addEventListener("click",()=>{ offTarget=null; $("offBg").classList.remove("show"); });
+$("offOk").addEventListener("click",()=>{
+  const m = markets.find(x=>x.id===offTarget);
+  m.active = false;
+  m.until = now().slice(0,7);
+  $("offBg").classList.remove("show");
+  offTarget = null;
+  renderMarkets();
+  addLog(`<b>${m.name}</b>を一覧から外しました(過去データは保持)`);
+  showToast(`「${m.name}」を一覧から外しました。過去のデータは引き続き確認できます`);
+});
+
+// ---- 一覧に戻す ----
+function turnOn(id){
+  const m = markets.find(x=>x.id===id);
+  m.active = true;
+  delete m.until;
+  renderMarkets();
+  addLog(`<b>${m.name}</b>を一覧に戻しました`);
+  showToast(`「${m.name}」を一覧に戻しました。入力画面・ダッシュボードに再び表示されます`);
+}
+
+// ---- 追加 ----
+$("addBtn").addEventListener("click",()=>{
+  const name = $("newName").value.trim();
+  if(!name){ showToast("市場名を入力してください"); return; }
+  if(markets.some(m=>m.name===name)){
+    const dup = markets.find(m=>m.name===name);
+    showToast(dup.active
+      ? `「${name}」はすでに登録されています`
+      : `「${name}」は過去に登録があります。一覧の「一覧に戻す」で復帰できます`);
+    return;
+  }
+  $("addBody").innerHTML = `<b>${name}</b> を出荷先の市場として追加します。`;
+  $("addBg").classList.add("show");
+});
+$("addCancel").addEventListener("click",()=>$("addBg").classList.remove("show"));
+$("addOk").addEventListener("click",()=>{
+  const name = $("newName").value.trim();
+  const lastActive = markets.map(m=>m.active).lastIndexOf(true);
+  markets.splice(lastActive+1, 0, { id: nextId++, name, active:true, since: now().slice(0,7) });
+  $("newName").value = "";
+  $("addBg").classList.remove("show");
+  renderMarkets();
+  addLog(`<b>${name}</b>を追加しました`);
+  showToast(`「${name}」を追加しました。入力画面・データ一覧の絞り込みに表示されます`);
+});
+
+// ---- 変更履歴 ----
+function renderLogs(){
+  $("logList").innerHTML = logs.map(l=>`
+    <div class="logitem">
+      <span class="logtime">${l.t}</span>
+      <span class="logbody">${l.body}<span class="logwho"> ／ ${l.who}</span></span>
+    </div>`).join("");
+}
+
+renderMarkets();
+renderLogs();
+</script>
+</body>
+</html>
