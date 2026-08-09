@@ -17,6 +17,7 @@
     --tomato-deep:#a63a2f;
     --sat:#2f6fb0;
     --sat-bg:#eaf2fa;
+    --up:#1f5fa8;
     --hol:#c94a3c;
     --hol-bg:#fbebe9;
     --warn:#c8862c;
@@ -220,7 +221,7 @@
     align-items:center;
     gap:3px;
   }
-  .yoy.up{color:var(--vine-deep);}
+  .yoy.up{color:var(--up);}
   .yoy.down{color:var(--hol);}
   .yoy.zero{color:var(--sub);}
   .price-grid{
@@ -250,7 +251,7 @@
     color:var(--sub);
     margin-top:3px;
   }
-  .cell.up .pr{color:var(--vine-deep);}
+  .cell.up .pr{color:var(--up);}
 
   /* ---------- Weekly bars ---------- */
   .weekcard{
@@ -425,6 +426,8 @@
     <a href="admin.html" style="color:#8a6d1f;font-weight:700;">数量・単価入力</a>
     <span style="color:#c9bd93;">|</span>
     <a href="list.html" style="color:#8a6d1f;font-weight:700;">データ一覧</a>
+    <span style="color:#c9bd93;">|</span>
+    <a href="announce.html" style="color:#8a6d1f;font-weight:700;">お知らせ投稿</a>
   </div>
   <div class="topbar">
     <div class="brandrow">
@@ -454,7 +457,7 @@
   <!-- ===== Market price cards ===== -->
   <div class="section">
     <div class="section-title"><span class="bar"></span>市場別 サイズ単価(<span id="unitNote">1パックあたり</span>)</div>
-    <div class="section-note">緑数字=前年同日より高値の市場・サイズ</div>
+    <div class="section-note">青数字=前年同日より高値のサイズ／市場名の横は市場全体の前年比(▲青=高値・▼赤=安値)</div>
   </div>
   <div id="marketCards"></div>
 

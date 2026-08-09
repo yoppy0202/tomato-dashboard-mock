@@ -1,0 +1,616 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>管理画面:お知らせ投稿(モック)</title>
+<style>
+  :root{
+    --ink:#232323;
+    --sub:#6f6f6f;
+    --line:#e3e2df;
+    --paper:#ffffff;
+    --floor:#faf9f7;
+    --vine:#4c7a52;
+    --vine-deep:#33583a;
+    --tomato:#c94a3c;
+    --tomato-deep:#a63a2f;
+    --sat:#2f6fb0;
+    --hol:#c94a3c;
+    --warn:#c8862c;
+    --warn-bg:#fbf1e1;
+    --admin:#8a6d1f;
+    --admin-bg:#f6efd9;
+    --line-green:#06c755;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;background:#efeee9;
+    font-family:"Hiragino Sans","Yu Gothic UI","BIZ UDPGothic",system-ui,-apple-system,sans-serif;
+    color:var(--ink);-webkit-font-smoothing:antialiased;
+  }
+  .sheet{
+    max-width:640px;margin:0 auto;background:var(--paper);
+    min-height:100vh;box-shadow:0 0 40px rgba(0,0,0,0.12);
+    padding-bottom:40px;
+  }
+  .mockbanner{
+    background:#fff5cc;color:#7a5c00;font-size:11px;text-align:center;padding:6px 10px;
+  }
+  .adminband{
+    display:flex;align-items:center;justify-content:space-between;gap:8px;
+    background:var(--admin-bg);color:var(--admin);
+    border-bottom:2px solid var(--admin);
+    font-size:12px;font-weight:700;padding:6px 16px;
+  }
+  .adminband .who{font-weight:400;font-size:11px;}
+  .topbar{
+    padding:14px 16px 12px 16px;border-bottom:1px solid var(--line);
+  }
+  .brandrow{display:flex;align-items:baseline;justify-content:space-between;}
+  .brand{font-size:15px;font-weight:700;letter-spacing:.02em;}
+  .brand .dot{
+    display:inline-block;width:7px;height:7px;border-radius:50%;
+    background:var(--tomato);margin-right:6px;vertical-align:middle;
+  }
+  .backlink{font-size:11.5px;color:var(--sub);text-decoration:none;}
+  .pagetitle{font-size:13px;font-weight:700;color:var(--vine-deep);margin-top:8px;}
+
+  section{padding:14px 16px 0 16px;}
+  h3{font-size:12px;color:var(--sub);font-weight:700;margin:4px 0 8px 0;letter-spacing:.03em;}
+
+  /* ---- 配信フローの説明 ---- */
+  .flowsteps{
+    display:flex;gap:0;border:1px solid var(--line);border-radius:10px;overflow:hidden;
+    font-size:10.5px;line-height:1.5;text-align:center;
+  }
+  .flowsteps .st{
+    flex:1;padding:8px 6px;background:var(--floor);
+    border-right:1px solid var(--line);color:var(--sub);
+  }
+  .flowsteps .st:last-child{border-right:none;}
+  .flowsteps .st b{display:block;color:var(--ink);font-size:11px;margin-bottom:2px;}
+
+  /* ---- 投稿フォーム ---- */
+  .formcard{
+    border:1px solid var(--line);border-radius:12px;padding:12px;margin-top:12px;
+  }
+  .formcard.editing{border-color:var(--warn);background:#fffdf7;}
+  .editing-note{
+    display:none;font-size:11.5px;color:#7a5410;background:var(--warn-bg);
+    border:1px solid #ecd7ae;border-radius:8px;padding:7px 10px;margin-bottom:8px;line-height:1.6;
+  }
+  .formcard.editing .editing-note{display:block;}
+  textarea{
+    width:100%;min-height:96px;resize:vertical;
+    font-family:inherit;font-size:13.5px;line-height:1.7;
+    border:1px solid var(--line);border-radius:8px;padding:10px;
+    background:#fff;color:var(--ink);
+  }
+  textarea:focus{outline:2px solid var(--vine);outline-offset:-1px;}
+  .formfoot{
+    display:flex;align-items:center;gap:10px;margin-top:8px;
+  }
+  .urlnote{font-size:10.5px;color:var(--sub);line-height:1.5;margin-right:auto;}
+  .btn{
+    font-family:inherit;font-size:13px;font-weight:700;color:var(--ink);
+    background:var(--floor);border:1px solid var(--line);border-radius:8px;
+    padding:9px 14px;cursor:pointer;
+  }
+  .btn:active{transform:translateY(1px);}
+  .btn.primary{background:var(--vine);border-color:var(--vine-deep);color:#fff;}
+  .btn.ghost{font-weight:400;font-size:12px;}
+  .btn.danger{color:var(--tomato-deep);border-color:#e0b7b1;background:#fdf4f3;}
+
+  /* ---- お知らせ一覧 ---- */
+  .aitem{
+    border:1px solid var(--line);border-radius:12px;padding:11px 12px;margin-bottom:10px;
+  }
+  .aitem.pending{border-color:#e6d9ae;background:#fffdf6;}
+  .ahead{
+    display:flex;align-items:center;gap:8px;margin-bottom:6px;flex-wrap:wrap;
+  }
+  .adate{font-size:11px;font-weight:700;color:var(--sub);}
+  .badge{
+    font-size:10px;font-weight:700;border-radius:12px;padding:2px 8px;
+  }
+  .badge.wait{color:#7a5410;background:var(--warn-bg);border:1px solid #ecd7ae;}
+  .badge.sent{color:#fff;background:var(--line-green);border:1px solid #05b04c;}
+  .badge.site{color:var(--vine-deep);background:#eef4ee;border:1px solid #cfe1d1;}
+  /* カテゴリバッジ */
+  .badge.cat-all{color:#5a5a5a;background:#efeeea;border:1px solid #ddd9d2;}
+  .badge.cat-kojin{color:var(--vine-deep);background:#eaf3ea;border:1px solid #c9dfcb;}
+  .badge.cat-kyodo{color:#1f5fa8;background:#eaf2fa;border:1px solid #c3d8ec;}
+
+  /* 本文の折りたたみ */
+  .abody.clamped{
+    display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;
+    overflow:hidden;
+  }
+  .morebtn{
+    font-family:inherit;font-size:11.5px;font-weight:700;color:var(--sat);
+    background:none;border:none;padding:4px 0 0 0;cursor:pointer;
+  }
+
+  /* フォームの上段(カテゴリ選択) */
+  .formtop{
+    display:flex;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap;
+  }
+  .formtop label{font-size:11.5px;color:var(--sub);font-weight:700;}
+  .formtop select{
+    font-family:inherit;font-size:13px;font-weight:700;color:var(--ink);
+    background:var(--floor);border:1px solid var(--line);border-radius:8px;padding:7px 10px;
+  }
+  .cathint{font-size:10.5px;color:var(--sub);line-height:1.5;}
+  .counter{
+    font-size:11px;color:var(--sub);font-variant-numeric:tabular-nums;margin-left:auto;
+  }
+  .counter.over{color:var(--tomato-deep);font-weight:700;}
+
+  /* LINE配信プレビュー */
+  .linepv{
+    margin-top:10px;border:1px solid var(--line);border-radius:10px;
+    background:var(--floor);padding:9px 11px;
+  }
+  .linepv .pvhead{
+    display:flex;align-items:center;gap:6px;
+    font-size:11px;font-weight:700;color:var(--sub);margin-bottom:6px;
+  }
+  .linepv .dotline{
+    width:9px;height:9px;border-radius:50%;background:var(--line-green);display:inline-block;
+  }
+  .linepv .pvbody{
+    font-size:12.5px;line-height:1.7;background:#fff;
+    border:1px solid var(--line);border-radius:8px;padding:8px 10px;
+    white-space:pre-wrap;word-break:break-word;
+  }
+  .linepv .pvbody .lnk{color:var(--sat);}
+  .linepv .pvnote{font-size:10px;color:var(--sub);margin-top:5px;line-height:1.6;}
+  .countdown{
+    font-size:11px;font-weight:700;color:#7a5410;
+    font-variant-numeric:tabular-nums;
+  }
+  .abody{font-size:13px;line-height:1.75;}
+  .abody a{color:var(--sat);word-break:break-all;}
+  .afoot{
+    display:flex;align-items:center;gap:8px;margin-top:8px;flex-wrap:wrap;
+  }
+  .reads{font-size:10.5px;color:var(--sub);margin-right:auto;}
+  .minibtn{
+    font-family:inherit;font-size:11.5px;font-weight:700;
+    border-radius:8px;padding:5px 12px;cursor:pointer;
+  }
+  .minibtn.fix{color:var(--vine-deep);background:#eef4ee;border:1px solid #cfe1d1;}
+  .minibtn.del{color:var(--tomato-deep);background:#fdf4f3;border:1px solid #e0b7b1;}
+  .sentnote{font-size:10px;color:var(--sub);line-height:1.5;}
+
+  /* ---- デモ操作 ---- */
+  .demobox{
+    margin:12px 16px 0 16px;
+    background:var(--admin-bg);border:1px dashed var(--admin);
+    border-radius:8px;padding:7px 10px;
+    font-size:10.5px;color:var(--admin);line-height:1.7;
+  }
+  .demobox button{
+    font-family:inherit;font-size:10.5px;color:var(--admin);
+    background:#fff;border:1px solid var(--admin);border-radius:6px;
+    padding:1px 8px;cursor:pointer;
+  }
+
+  /* ---- モーダル ---- */
+  .modalbg{
+    display:none;position:fixed;inset:0;z-index:60;
+    background:rgba(30,30,28,.45);
+    align-items:center;justify-content:center;padding:20px;
+  }
+  .modalbg.show{display:flex;}
+  .modal{
+    background:#fff;border-radius:14px;max-width:400px;width:100%;
+    padding:20px 20px 16px 20px;
+    box-shadow:0 12px 40px rgba(0,0,0,.25);
+  }
+  .modal .mtitle{font-size:14.5px;font-weight:700;margin-bottom:10px;}
+  .modal.blocked .mtitle{color:var(--tomato-deep);}
+  .modal .mbody{font-size:13px;line-height:1.8;}
+  .modal .preview{
+    background:var(--floor);border:1px solid var(--line);border-radius:8px;
+    padding:9px 11px;font-size:12.5px;line-height:1.7;margin:8px 0;
+    max-height:130px;overflow-y:auto;
+  }
+  .modal .urlcheck{
+    font-size:12px;border-radius:8px;padding:8px 10px;margin:8px 0;line-height:1.6;
+  }
+  .modal .urlcheck.ok{background:#eef4ee;border:1px solid #cfe1d1;color:var(--vine-deep);}
+  .modal .urlcheck.ng{background:#fbebe9;border:1px solid #eec6c1;color:var(--tomato-deep);}
+  .modal .mnote{font-size:11px;color:var(--sub);margin-top:6px;line-height:1.7;}
+  .modal .mbtns{display:flex;gap:10px;justify-content:flex-end;margin-top:14px;}
+
+  .toast{
+    position:fixed;left:50%;bottom:24px;transform:translateX(-50%);
+    background:var(--ink);color:#fff;font-size:12px;border-radius:20px;
+    padding:9px 16px;opacity:0;transition:opacity .25s;pointer-events:none;
+    max-width:90%;text-align:center;z-index:80;line-height:1.6;
+  }
+  .toast.show{opacity:.94;}
+</style>
+</head>
+<body>
+<div class="sheet">
+  <div class="mockbanner">⚠ これは検討用のモック画面です。内容はすべてダミーで、本番の仕様・デザインとは異なります。</div>
+  <div class="adminband">
+    <span>🔑 管理モード ─ お知らせ投稿</span>
+    <span class="who">ログイン中:山田(管理者) ・ 操作はすべて記録されます</span>
+  </div>
+
+  <div class="topbar">
+    <div class="brandrow">
+      <div class="brand"><span class="dot"></span>ミニトマト部会 出荷情報</div>
+      <a class="backlink" href="index.html">← 閲覧画面へ戻る</a>
+    </div>
+    <div class="pagetitle">📣 お知らせ投稿</div>
+  </div>
+
+  <section>
+    <div class="flowsteps">
+      <div class="st"><b>① 投稿</b>サイトには即掲載</div>
+      <div class="st"><b>② 10分間の保留</b>訂正・削除が可能</div>
+      <div class="st"><b>③ LINE自動配信</b>以降は編集不可</div>
+    </div>
+
+    <div class="formcard" id="formCard">
+      <div class="editing-note" id="editingNote"></div>
+      <div class="formtop">
+        <label for="catSelect">対象</label>
+        <select id="catSelect">
+          <option value="all">全体</option>
+          <option value="kojin">個人選果</option>
+          <option value="kyodo">共同選果</option>
+        </select>
+        <span class="cathint">選んだ対象がお知らせの見出しとLINEの冒頭に表示されます(全員が閲覧できます)</span>
+      </div>
+      <textarea id="bodyInput" placeholder="お知らせの本文を入力してください(URLを含めることもできます)"></textarea>
+      <div class="formfoot">
+        <div class="urlnote">URLが含まれる場合、投稿時に安全性を自動チェックします</div>
+        <span class="counter" id="counter">0 / 500字</span>
+      </div>
+      <div class="linepv">
+        <div class="pvhead"><span class="dotline"></span>LINEグループに送られる文面(プレビュー)</div>
+        <div class="pvbody" id="linePreview">本文を入力するとここに表示されます</div>
+        <div class="pvnote" id="lineNote">200字を超える場合は冒頭のみを送り、続きはサイトのお知らせへリンクします。</div>
+      </div>
+      <div class="formfoot" style="margin-top:10px;">
+        <span class="urlnote"></span>
+        <button class="btn ghost" id="cancelEditBtn" style="display:none">やめる</button>
+        <button class="btn primary" id="postBtn">投稿する</button>
+      </div>
+    </div>
+  </section>
+
+  <div class="demobox">
+    【デモ用】① URLブロックの確認: <button id="demoUrlBtn">危険なURLのサンプルを挿入</button> して投稿するとSafe Browsingチェックでブロックされます。<br>
+    ② 長文の扱いを確認: <button id="demoLongBtn">長めのお知らせ例を入力</button> すると、LINEは冒頭＋リンクに要約され、掲載後は本文が折りたたまれます。
+  </div>
+
+  <section>
+    <h3>掲載中のお知らせ</h3>
+    <div id="alist"></div>
+  </section>
+</div>
+
+<!-- 投稿前の確認 -->
+<div class="modalbg" id="confirmBg">
+  <div class="modal">
+    <div class="mtitle" id="cTitle">投稿前の確認</div>
+    <div class="mbody">以下の内容でサイトに<b>即時掲載</b>し、<b>10分後にLINEグループへ自動配信</b>します。</div>
+    <div class="preview" id="cPreview"></div>
+    <div class="urlcheck ok" id="cUrlCheck" style="display:none"></div>
+    <div style="font-size:11px;font-weight:700;color:#6f6f6f;margin-top:10px;">LINEグループへ送られる文面</div>
+    <div class="preview" id="cLine" style="white-space:pre-wrap;"></div>
+    <div class="mnote" id="cLineNote" style="margin-top:0"></div>
+    <div class="mnote">投稿すると管理者LINEグループへ通知が送られます。配信までの10分間は訂正・削除ができます。</div>
+    <div class="mbtns">
+      <button class="btn" id="cCancel">戻って直す</button>
+      <button class="btn primary" id="cOk">投稿する</button>
+    </div>
+  </div>
+</div>
+
+<!-- URLブロック -->
+<div class="modalbg" id="blockBg">
+  <div class="modal blocked">
+    <div class="mtitle">⚠ 投稿をブロックしました</div>
+    <div class="mbody">本文に含まれるリンクが、危険なサイト(フィッシング・詐欺等)として報告されています。</div>
+    <div class="urlcheck ng" id="bUrl"></div>
+    <div class="mnote">リンクの安全性チェック(Google Safe Browsing)による自動判定です。この操作は監査ログに記録され、管理者LINEグループへ通知されました。心当たりのないブロックの場合は他の管理者に相談してください。</div>
+    <div class="mbtns">
+      <button class="btn primary" id="bClose">本文を修正する</button>
+    </div>
+  </div>
+</div>
+
+<!-- 削除の確認 -->
+<div class="modalbg" id="delBg">
+  <div class="modal blocked">
+    <div class="mtitle">このお知らせを削除しますか?</div>
+    <div class="mbody">サイトから即時に取り下げ、LINEグループへの配信も中止します。削除は取り消せません。</div>
+    <div class="preview" id="dPreview"></div>
+    <div class="mnote">削除の操作は監査ログに記録され、管理者LINEグループへ通知されます。誤字などの軽微な修正は「訂正」を使ってください。</div>
+    <div class="mbtns">
+      <button class="btn" id="dCancel">やめる</button>
+      <button class="btn danger" id="dOk">削除する</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const MEMBERS = 40;
+const HOLD_SEC = 10 * 60;   // 配信までの保留時間(10分)
+const SOFT_LIMIT = 500;     // 推奨文字数
+const LINE_LIMIT = 200;     // これを超えるとLINEは要約+リンク
+const LINE_HEAD = 150;      // 要約として送る冒頭の目安文字数
+const CLAMP_LIMIT = 300;    // これを超えるとサイト側で折りたたみ
+
+const CATS = {
+  all:   { label:"全体",     cls:"cat-all"   },
+  kojin: { label:"個人選果", cls:"cat-kojin" },
+  kyodo: { label:"共同選果", cls:"cat-kyodo" }
+};
+
+// 既存のお知らせ(配信済みダミー)
+let items = [
+  { id: 3, date: "7/28", cat:"all", body: "来週月曜は集出荷場のメンテナンスのため、搬入受付を1時間繰り上げます(7:00〜)。", state: "sent", reads: 32 },
+  { id: 2, date: "7/22", cat:"kojin", body: "2S・S規格の需要が高まっています。選別時のご協力をお願いします。", state: "sent", reads: 38 },
+  { id: 1, date: "7/15", cat:"all", body: "来月の部会総会は8/28(金)19時、公民館にて開催予定です。", state: "sent", reads: 40 },
+];
+let nextId = 4;
+let editingId = null;
+
+const $ = id => document.getElementById(id);
+const toast = $("toast");
+let toastTimer;
+function showToast(msg){
+  toast.innerHTML = msg;
+  toast.classList.add("show");
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(()=>toast.classList.remove("show"), 3400);
+}
+
+function linkify(text){
+  return text.replace(/(https?:\/\/[^\s]+)/g, '<a href="#" onclick="return false">$1</a>');
+}
+function fmtSec(s){
+  const m = Math.floor(s/60), r = s%60;
+  return m + ":" + String(r).padStart(2,"0");
+}
+function extractUrl(text){
+  const m = text.match(/https?:\/\/[^\s]+/);
+  return m ? m[0] : null;
+}
+function isDangerous(url){
+  return /phishing|scam|danger/i.test(url); // モック判定(本番はSafe Browsing API)
+}
+
+// ---- LINE配信文の組み立て ----
+// 200字以下はそのまま。超える場合は冒頭150字前後を文の区切りで丸めて、続きはリンク
+function buildLineText(body, cat, id){
+  const head = "【" + CATS[cat].label + "】\n";
+  if(body.length <= LINE_LIMIT) return { text: head + body, summarized: false };
+  let cut = body.slice(0, LINE_HEAD);
+  const mark = Math.max(cut.lastIndexOf("。"), cut.lastIndexOf("\n"), cut.lastIndexOf("、"));
+  if(mark > LINE_HEAD * 0.5) cut = cut.slice(0, mark + 1);
+  const url = "https://tomato.example.jp/announce/" + (id || "○○");
+  return { text: head + cut.trim() + "…\n\n続きはこちら\n" + url, summarized: true };
+}
+
+// ---- 文字数カウンター・LINEプレビュー ----
+function updateForm(){
+  const body = $("bodyInput").value;
+  const cat = $("catSelect").value;
+  const counter = $("counter");
+  counter.textContent = body.length + " / " + SOFT_LIMIT + "字";
+  counter.classList.toggle("over", body.length > SOFT_LIMIT);
+
+  const pv = $("linePreview");
+  if(!body.trim()){
+    pv.textContent = "本文を入力するとここに表示されます";
+    $("lineNote").textContent = LINE_LIMIT + "字を超える場合は冒頭のみを送り、続きはサイトのお知らせへリンクします。";
+    return;
+  }
+  const built = buildLineText(body.trim(), cat, editingId);
+  pv.innerHTML = built.text
+    .replace(/(https?:\/\/[^\s]+)/g, '<span class="lnk">$1</span>')
+    .replace(/\n/g, "<br>");
+  $("lineNote").textContent = built.summarized
+    ? "本文が" + LINE_LIMIT + "字を超えたため、冒頭のみを送信し全文はサイトで表示します。書き出しに要点を書くと伝わりやすくなります。"
+    : "本文が短いため、全文をそのまま送信します。";
+}
+
+// ---- 一覧描画 ----
+function renderList(){
+  const wrap = $("alist");
+  wrap.innerHTML = items.map(it=>{
+    const cat = CATS[it.cat] || CATS.all;
+    const catBadge = `<span class="badge ${cat.cls}">${cat.label}</span>`;
+    const long = it.body.length > CLAMP_LIMIT;
+    const bodyHtml = `<div class="abody ${long && !it.expanded ? 'clamped' : ''}" id="body_${it.id}">${linkify(it.body)}</div>`
+      + (long ? `<button class="morebtn" data-more="${it.id}">${it.expanded ? '▲ 折りたたむ' : '▼ 続きを読む'}</button>` : '');
+
+    if(it.state === "pending"){
+      return `<div class="aitem pending">
+        <div class="ahead">
+          <span class="adate">${it.date}</span>
+          ${catBadge}
+          <span class="badge site">サイト掲載中</span>
+          <span class="badge wait">LINE配信待ち</span>
+          <span class="countdown">配信まで ${fmtSec(it.remain)}</span>
+        </div>
+        ${bodyHtml}
+        <div class="afoot">
+          <span class="reads">配信前でも部会員はサイトで閲覧できます</span>
+          <button class="minibtn fix" data-fix="${it.id}">✏️ 訂正</button>
+          <button class="minibtn del" data-del="${it.id}">🗑 削除</button>
+        </div>
+      </div>`;
+    }
+    return `<div class="aitem">
+      <div class="ahead">
+        <span class="adate">${it.date}</span>
+        ${catBadge}
+        <span class="badge sent">LINE配信済み</span>
+      </div>
+      ${bodyHtml}
+      <div class="afoot">
+        <span class="reads">既読 ${it.reads}/${MEMBERS}人</span>
+        <span class="sentnote">配信済みのため編集できません。直したい場合は新規投稿で出し直してください。</span>
+      </div>
+    </div>`;
+  }).join("");
+
+  document.querySelectorAll("[data-fix]").forEach(b=>b.addEventListener("click",()=>startEdit(+b.dataset.fix)));
+  document.querySelectorAll("[data-del]").forEach(b=>b.addEventListener("click",()=>askDelete(+b.dataset.del)));
+  document.querySelectorAll("[data-more]").forEach(b=>b.addEventListener("click",()=>{
+    const it = items.find(x=>x.id === +b.dataset.more);
+    it.expanded = !it.expanded;
+    renderList();
+  }));
+}
+
+// ---- カウントダウン ----
+setInterval(()=>{
+  let changed = false;
+  items.forEach(it=>{
+    if(it.state === "pending"){
+      it.remain--;
+      if(it.remain <= 0){
+        it.state = "sent";
+        it.reads = 0;
+        showToast("📤 保留時間が経過したため、LINEグループへ自動配信しました");
+        changed = true;
+      }
+    }
+  });
+  // 秒表示の更新(再描画は軽量なモックなので全体更新)
+  if(items.some(it=>it.state==="pending") || changed) renderList();
+},1000);
+
+// ---- 投稿フロー ----
+$("postBtn").addEventListener("click",()=>{
+  const body = $("bodyInput").value.trim();
+  if(!body){ showToast("本文を入力してください"); return; }
+  const url = extractUrl(body);
+  if(url && isDangerous(url)){
+    $("bUrl").textContent = "🚫 " + url;
+    $("blockBg").classList.add("show");
+    return;
+  }
+  $("cTitle").textContent = editingId ? "訂正内容の確認" : "投稿前の確認";
+  const cat = CATS[$("catSelect").value];
+  $("cPreview").innerHTML = `<span class="badge ${cat.cls}" style="margin-bottom:6px;display:inline-block">${cat.label}</span><br>` + linkify(body);
+  const built = buildLineText(body, $("catSelect").value, editingId);
+  $("cLine").innerHTML = built.text
+    .replace(/(https?:\/\/[^\s]+)/g, '<span style="color:#2f6fb0">$1</span>')
+    .replace(/\n/g,"<br>");
+  $("cLineNote").textContent = built.summarized
+    ? "本文が長いため、LINEには冒頭のみを送信し全文はサイトで表示します。"
+    : "LINEには全文をそのまま送信します。";
+  const uc = $("cUrlCheck");
+  if(url){
+    uc.style.display = "block";
+    uc.innerHTML = "🔗 リンクの安全性チェック:✅ 問題は見つかりませんでした<br><span style='font-size:10.5px'>" + url + "</span>";
+  }else{
+    uc.style.display = "none";
+  }
+  $("confirmBg").classList.add("show");
+});
+
+$("cCancel").addEventListener("click",()=>$("confirmBg").classList.remove("show"));
+$("cOk").addEventListener("click",()=>{
+  $("confirmBg").classList.remove("show");
+  const body = $("bodyInput").value.trim();
+  const cat = $("catSelect").value;
+  if(editingId){
+    const it = items.find(x=>x.id===editingId);
+    it.body = body;
+    it.cat = cat;
+    it.remain = HOLD_SEC; // 訂正すると保留時間はリセット(あらためて10分)
+    showToast("✏️ 訂正を反映しました。配信までの保留時間をリセットしました(10分)<br>管理者LINEグループへ通知を送信しました");
+    endEdit();
+  }else{
+    items.unshift({ id: nextId++, date: "8/8", cat, body, state: "pending", remain: HOLD_SEC });
+    showToast("✅ サイトに掲載しました。LINEグループへは10分後に自動配信されます<br>管理者LINEグループへ投稿通知を送信しました");
+    $("bodyInput").value = "";
+    $("catSelect").value = "all";
+    updateForm();
+  }
+  renderList();
+});
+
+$("bClose").addEventListener("click",()=>$("blockBg").classList.remove("show"));
+
+// ---- 訂正 ----
+function startEdit(id){
+  const it = items.find(x=>x.id===id);
+  editingId = id;
+  $("bodyInput").value = it.body;
+  $("catSelect").value = it.cat || "all";
+  $("formCard").classList.add("editing");
+  $("editingNote").innerHTML = "✏️ <b>配信待ちのお知らせを訂正中です。</b>訂正して再投稿すると、配信までの保留時間はあらためて10分になります。";
+  $("postBtn").textContent = "訂正して再投稿";
+  $("cancelEditBtn").style.display = "inline-block";
+  updateForm();
+  window.scrollTo({top:0, behavior:"smooth"});
+  $("bodyInput").focus();
+}
+function endEdit(){
+  editingId = null;
+  $("bodyInput").value = "";
+  $("catSelect").value = "all";
+  $("formCard").classList.remove("editing");
+  $("postBtn").textContent = "投稿する";
+  $("cancelEditBtn").style.display = "none";
+  updateForm();
+}
+$("cancelEditBtn").addEventListener("click",endEdit);
+
+// ---- 削除 ----
+let delTarget = null;
+function askDelete(id){
+  delTarget = id;
+  $("dPreview").textContent = items.find(x=>x.id===id).body;
+  $("delBg").classList.add("show");
+}
+$("dCancel").addEventListener("click",()=>{ delTarget=null; $("delBg").classList.remove("show"); });
+$("dOk").addEventListener("click",()=>{
+  items = items.filter(x=>x.id!==delTarget);
+  $("delBg").classList.remove("show");
+  if(editingId===delTarget) endEdit();
+  delTarget = null;
+  showToast("🗑 お知らせを削除し、サイトから取り下げました。LINE配信は行われません<br>管理者LINEグループへ通知を送信しました");
+  renderList();
+});
+
+// ---- デモ用 ----
+$("demoUrlBtn").addEventListener("click",()=>{
+  const t = $("bodyInput");
+  t.value = (t.value ? t.value + "\n" : "") + "詳しくはこちら → http://phishing-example.test/tomato";
+  t.focus();
+  updateForm();
+});
+$("demoLongBtn").addEventListener("click",()=>{
+  $("bodyInput").value = "8月下旬の出荷計画についてお知らせします。お盆明けは市場の入荷量が回復し、単価が落ち着く見込みです。つきましては、8/18(月)〜8/23(土)の期間、各市場への出荷を曜日ごとに平準化したいと考えています。特に月曜と木曜は出荷が少なくなる傾向があるため、可能な範囲でこの曜日への振り分けにご協力をお願いします。なお、選果場の稼働時間は通常どおり7:30〜16:00です。詳細は集出荷場に掲示している配車予定表をご確認ください。ご不明な点は部会事務局までお問い合わせください。";
+  $("catSelect").value = "kojin";
+  updateForm();
+  $("bodyInput").focus();
+});
+
+// ---- 入力イベント ----
+$("bodyInput").addEventListener("input", updateForm);
+$("catSelect").addEventListener("change", updateForm);
+
+updateForm();
+renderList();
+</script>
+</body>
+</html>
