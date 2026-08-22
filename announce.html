@@ -114,6 +114,15 @@
   .badge.cat-all{color:#5a5a5a;background:#efeeea;border:1px solid #ddd9d2;}
   .badge.cat-kojin{color:var(--vine-deep);background:#eaf3ea;border:1px solid #c9dfcb;}
   .badge.cat-kyodo{color:#1f5fa8;background:#eaf2fa;border:1px solid #c3d8ec;}
+  .badge.cat-minutes{color:#6a4fa0;background:#efe9f7;border:1px solid #d9cbee;}
+
+  /* 議事録由来のお知らせ */
+  .minutesnote{
+    font-size:11px;color:#6a4fa0;background:#f7f4fb;border:1px solid #e3d8f2;
+    border-radius:8px;padding:6px 10px;margin-top:8px;line-height:1.7;
+  }
+  .minutesnote a{color:#6a4fa0;font-weight:700;text-decoration:underline;}
+  .linetarget{font-size:10.5px;color:var(--sub);margin-top:4px;}
 
   /* 本文の折りたたみ */
   .abody.clamped{
@@ -376,10 +385,25 @@ const LINE_HEAD = 150;      // 要約として送る冒頭の目安文字数
 const CLAMP_LIMIT = 300;    // これを超えるとサイト側で折りたたみ
 
 const CATS = {
-  all:   { label:"全体",     cls:"cat-all"   },
-  kojin: { label:"個人選果", cls:"cat-kojin" },
-  kyodo: { label:"共同選果", cls:"cat-kyodo" }
+  all:     { label:"全体",     cls:"cat-all"     },
+  kojin:   { label:"個人選果", cls:"cat-kojin"   },
+  kyodo:   { label:"共同選果", cls:"cat-kyodo"   },
+  minutes: { label:"議事録",   cls:"cat-minutes" }
 };
+
+// ---- 議事録由来のお知らせ(役員協議会は管理者のみに配信) ----
+const ADMIN_COUNT = 4; // モックの管理者人数(§3 管理者は2名以上を確保する方針のダミー値)
+
+function minutesAnnouncementDate(a){
+  const d = new Date(a.createdAt);
+  return (d.getMonth()+1) + "/" + d.getDate();
+}
+function visibleMinutesAnnouncements(){
+  if(window.MinutesStore && typeof MinutesStore.tick === "function") MinutesStore.tick();
+  const isAdmin = window.TomatoNav && TomatoNav.isAdmin();
+  const anns = (window.MinutesStore ? MinutesStore.activeAnnouncements() : []);
+  return anns.filter(a => isAdmin || a.minutesCat !== "yakuin");
+}
 
 // 既存のお知らせ(配信済みダミー)
 let items = [
@@ -403,36 +427,88 @@ const MEMBER_NAMES = (function(){
   }
   return out.slice(0, MEMBERS);
 })();
-function fakeReadTime(it, i){
+const ADMIN_NAMES = ["山田","佐藤","田中","鈴木"]; // 役員協議会由来のお知らせの母数(§3 管理者は2名以上確保の方針のダミー名簿)
+const minutesPanelState = {}; // 議事録由来のお知らせの既読内訳パネル状態(id -> {open, tab})
+
+function fakeReadTime(dateStr, i){
   const h = 7 + (i % 11);
   const m = (i*7) % 60;
-  return it.date + " " + String(h).padStart(2,"0") + ":" + String(m).padStart(2,"0");
+  return dateStr + " " + String(h).padStart(2,"0") + ":" + String(m).padStart(2,"0");
 }
-function buildReadBreakdown(it){
-  const readers = MEMBER_NAMES.slice(0, it.reads).map((name,i)=>({ name, time: fakeReadTime(it,i) }));
-  const unreaders = MEMBER_NAMES.slice(it.reads);
+function buildReadBreakdown(dateStr, readCount, namePool){
+  const readers = namePool.slice(0, readCount).map((name,i)=>({ name, time: fakeReadTime(dateStr,i) }));
+  const unreaders = namePool.slice(readCount);
   return { readers, unreaders };
 }
-function renderReadPanel(it){
-  const bd = buildReadBreakdown(it);
-  const pct = Math.round(it.reads / MEMBERS * 100);
-  const tab = it._panelTab || "unread";
+function renderReadPanel(id, dateStr, readCount, memberCount, namePool, panelOpen, panelTab, tabAttr){
+  tabAttr = tabAttr || "rtab";
+  const bd = buildReadBreakdown(dateStr, readCount, namePool);
+  const pct = memberCount ? Math.round(readCount / memberCount * 100) : 0;
+  const tab = panelTab || "unread";
   const readersHtml = bd.readers.map(r=>
     `<div class="runit"><span class="rname">${r.name}</span><span class="rtime">${r.time}</span></div>`
   ).join("") || '<div class="runit"><span class="rname">まだいません</span></div>';
   const unreadersHtml = bd.unreaders.map(name=>
     `<div class="runit"><span class="rname">${name}</span></div>`
   ).join("") || '<div class="runit"><span class="rname">全員既読です</span></div>';
-  return `<div class="readpanel ${it._panelOpen ? 'show' : ''}">
+  return `<div class="readpanel ${panelOpen ? 'show' : ''}">
     <div class="readbar-wrap">
       <div class="readbar-track"><div class="readbar-fill" style="width:${pct}%"></div></div>
-      <div class="readbar-txt">${it.reads}/${MEMBERS}人 既読</div>
+      <div class="readbar-txt">${readCount}/${memberCount}人 既読</div>
     </div>
     <div class="readtabs">
-      <button class="readtab ${tab==='unread'?'active':''}" data-rtab="${it.id}" data-tab="unread">未読(${bd.unreaders.length})</button>
-      <button class="readtab ${tab==='read'?'active':''}" data-rtab="${it.id}" data-tab="read">既読(${bd.readers.length})</button>
+      <button class="readtab ${tab==='unread'?'active':''}" data-${tabAttr}="${id}" data-tab="unread">未読(${bd.unreaders.length})</button>
+      <button class="readtab ${tab==='read'?'active':''}" data-${tabAttr}="${id}" data-tab="read">既読(${bd.readers.length})</button>
     </div>
     <div class="readlist">${tab==='unread' ? unreadersHtml : readersHtml}</div>
+  </div>`;
+}
+
+// ---- 議事録由来のお知らせ1件分の描画 ----
+function renderMinutesItem(a){
+  const cat = CATS.minutes;
+  const srcCat = MinutesStore.CATS[a.minutesCat];
+  const catBadge = `<span class="badge ${cat.cls}">${cat.label}</span>`;
+  const memberCount = a.minutesCat === "yakuin" ? ADMIN_COUNT : MEMBERS;
+  const namePool = a.minutesCat === "yakuin" ? ADMIN_NAMES : MEMBER_NAMES;
+  const dateStr = minutesAnnouncementDate(a);
+  const bodyHtml = `<div class="abody">議事録が投稿されました:${a.title}</div>`;
+  const noteHtml = `<div class="minutesnote">🗒 このお知らせは議事録から自動生成されています。<a href="minutes-detail.html?id=${a.minutesId}">→ 議事録を見る</a></div>`;
+  const lineTargetHtml = `<div class="linetarget">LINE配信先:${srcCat.lineTarget}</div>`;
+
+  if(a.state === "pending"){
+    const remain = Math.max(0, Math.round((a.deadline - Date.now()) / 1000));
+    return `<div class="aitem pending">
+      <div class="ahead">
+        <span class="adate">${dateStr}</span>
+        ${catBadge}
+        <span class="badge site">サイト掲載中</span>
+        <span class="badge wait">LINE配信待ち</span>
+        <span class="countdown">配信まで ${fmtSec(remain)}</span>
+      </div>
+      ${bodyHtml}
+      ${noteHtml}
+      ${lineTargetHtml}
+    </div>`;
+  }
+  const isAdmin = window.TomatoNav && TomatoNav.isAdmin();
+  const ps = minutesPanelState[a.id] || {};
+  const readsFoot = isAdmin
+    ? `<button class="readbtn" data-mreadtoggle="${a.id}">既読 ${a.reads}/${memberCount}人 ・ ${ps.open ? '内訳を閉じる ▴' : '内訳を見る ▾'}</button>`
+    : `<span class="reads">既読 ${a.reads}/${memberCount}人</span>`;
+  return `<div class="aitem">
+    <div class="ahead">
+      <span class="adate">${dateStr}</span>
+      ${catBadge}
+      <span class="badge sent">LINE配信済み</span>
+    </div>
+    ${bodyHtml}
+    ${noteHtml}
+    ${lineTargetHtml}
+    <div class="afoot">
+      ${readsFoot}
+    </div>
+    ${isAdmin ? renderReadPanel(a.id, dateStr, a.reads, memberCount, namePool, ps.open, ps.tab, "mrtab") : ''}
   </div>`;
 }
 
@@ -538,9 +614,13 @@ function renderList(){
         ${readsFoot}
         <span class="sentnote">配信済みのため編集できません。直したい場合は新規投稿で出し直してください。</span>
       </div>
-      ${isAdmin ? renderReadPanel(it) : ''}
+      ${isAdmin ? renderReadPanel(it.id, it.date, it.reads, MEMBERS, MEMBER_NAMES, it._panelOpen, it._panelTab, "rtab") : ''}
     </div>`;
-  }).join("");
+  }).join("") + visibleMinutesAnnouncements()
+    .slice()
+    .sort((a,b)=> b.createdAt - a.createdAt)
+    .map(renderMinutesItem)
+    .join("");
 
   document.querySelectorAll("[data-fix]").forEach(b=>b.addEventListener("click",()=>startEdit(+b.dataset.fix)));
   document.querySelectorAll("[data-del]").forEach(b=>b.addEventListener("click",()=>askDelete(+b.dataset.del)));
@@ -560,6 +640,17 @@ function renderList(){
     it._panelOpen = true;
     renderList();
   }));
+  document.querySelectorAll("[data-mreadtoggle]").forEach(b=>b.addEventListener("click",()=>{
+    const id = +b.dataset.mreadtoggle;
+    const cur = minutesPanelState[id] || {};
+    minutesPanelState[id] = { open: !cur.open, tab: cur.tab || "unread" };
+    renderList();
+  }));
+  document.querySelectorAll("[data-mrtab]").forEach(b=>b.addEventListener("click",()=>{
+    const id = +b.dataset.mrtab;
+    minutesPanelState[id] = { open: true, tab: b.dataset.tab };
+    renderList();
+  }));
 }
 
 // ---- カウントダウン ----
@@ -576,8 +667,10 @@ setInterval(()=>{
       }
     }
   });
+  if(window.MinutesStore && MinutesStore.tick()) changed = true;
+  const hasPendingMinutes = window.MinutesStore && MinutesStore.activeAnnouncements().some(a=>a.state==="pending");
   // 秒表示の更新(再描画は軽量なモックなので全体更新)
-  if(items.some(it=>it.state==="pending") || changed) renderList();
+  if(items.some(it=>it.state==="pending") || hasPendingMinutes || changed) renderList();
 },1000);
 
 // ---- 投稿フロー ----
@@ -733,6 +826,7 @@ updateForm();
 renderList();
 checkDraft();
 </script>
+<script src="assets/minutes-store.js"></script>
 <script src="assets/unsaved-guard.js"></script>
 <script src="assets/nav.js"></script>
 <script>

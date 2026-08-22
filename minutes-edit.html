@@ -153,35 +153,8 @@
 
 <div class="toast" id="toast"></div>
 
+<script src="assets/minutes-store.js"></script>
 <script>
-// minutes.html と同じダミーデータ(モックのため単純にページごとに複製)
-const MINUTES = [
-  { id:1, cat:"zentai", date:"2026-08-10", title:"8月度 定例会議事録", author:"山田", updated:"2026-08-11 10:00",
-    body:"## 議題1: 8月の出荷状況について\n7月後半から出荷量が回復し、東京・神奈川向けを中心に単価も安定してきている。2S・S規格の引き合いが強く、選別への協力を継続してお願いする。\n\n## 議題2: 集出荷場メンテナンスについて\n8/24(月)に空調設備の点検を実施するため、当日は搬入受付を1時間繰り上げて7:00からとする。詳細は掲示物およびお知らせを参照。\n\n## 議題3: 部会総会の日程確認\n8/28(金)19時より公民館にて開催。議案は追って配布する。",
-    attachments:[{name:"集出荷場メンテナンス案内.pdf",type:"pdf"},{name:"8月度議案資料.docx",type:"doc"}] },
-  { id:2, cat:"yakuin", date:"2026-08-05", title:"役員協議会(8月)議事録", author:"佐藤", updated:"2026-08-05 19:10",
-    body:"## 議題1: 単価交渉の進捗\n主要3市場との単価交渉について、現行水準からの改定案を協議した。詳細は非公開資料を参照。\n\n## 議題2: 部会費の見直し\n次年度の部会費について、運営コストの増加を踏まえた見直し案を検討した。継続協議とする。",
-    attachments:[{name:"単価交渉方針(非公開).pdf",type:"pdf"}] },
-  { id:3, cat:"zentai", date:"2026-07-13", title:"7月度 定例会議事録", author:"山田", updated:"2026-07-14 09:30",
-    body:"## 議題1: 7月の出荷実績\n梅雨明け後の高温により、上位規格の比率がやや低下した。来月に向けて選別方法の再確認を行う。\n\n## 議題2: 新規市場開拓について\n北九州市場からの追加引き合いがあり、試験的な出荷を検討する。",
-    attachments:[] },
-  { id:4, cat:"yakuin", date:"2026-07-01", title:"役員協議会(7月)議事録 ─ 単価交渉方針", author:"佐藤", updated:"2026-07-02 08:00",
-    body:"## 議題1: 単価交渉方針\n来期の単価交渉にあたり、各市場の取引実績データをもとに交渉方針を策定した。\n\n## 議題2: 役員体制について\n次期役員候補について意見交換を行った。",
-    attachments:[{name:"交渉方針メモ.docx",type:"doc"}] },
-  { id:5, cat:"zentai", date:"2026-06-08", title:"6月度 定例会議事録", author:"田中", updated:"2026-06-09 11:00",
-    body:"## 議題1: 6月の出荷状況\n梅雨時期の天候不順により出荷量にばらつきが見られた。曜日別の平準化について再度周知する。\n\n## 議題2: 資材の共同購入\n出荷用資材の共同購入について、業者見積りを比較検討した。",
-    attachments:[{name:"資材見積り比較.pdf",type:"pdf"},{name:"6月度議事メモ.docx",type:"doc"}] },
-  { id:6, cat:"zentai", date:"2026-05-11", title:"総会議事録(2026年度)", author:"山田", updated:"2026-05-12 14:20",
-    body:"## 議題1: 前年度事業報告\n前年度の出荷実績・単価動向について報告があった。\n\n## 議題2: 今年度事業計画\n今年度の目標出荷量および品質向上の取り組みについて審議し、承認された。\n\n## 議題3: 役員選任\n新役員を選任した。詳細は別紙名簿を参照。",
-    attachments:[{name:"前年度事業報告書.pdf",type:"pdf"},{name:"今年度事業計画書.pdf",type:"pdf"},{name:"新役員名簿.docx",type:"doc"}] },
-  { id:7, cat:"yakuin", date:"2026-04-03", title:"役員協議会(4月)議事録", author:"佐藤", updated:"2026-04-03 20:00",
-    body:"## 議題1: 部会費の見直し(続き)\n前回に続き、部会費の見直しについて協議した。次回総会にて提案する方向で合意。\n\n## 議題2: 資材共同購入の契約\n資材の共同購入契約について、業者選定を行った。",
-    attachments:[] },
-  { id:8, cat:"zentai", date:"2026-03-09", title:"3月度 定例会議事録", author:"田中", updated:"2026-03-10 09:00",
-    body:"## 議題1: 3月の出荷実績\n年度末に向けて出荷量が増加傾向。市場別の単価動向を共有した。\n\n## 議題2: 次年度の体制について\n次年度の選果体制について意見交換を行った。",
-    attachments:[{name:"3月度出荷実績表.pdf",type:"pdf"}] }
-];
-
 const $ = id => document.getElementById(id);
 let toastTimer;
 function showToast(msg){
@@ -197,7 +170,7 @@ function getId(){
   return v ? Number(v) : null;
 }
 const editId = getId();
-const editing = editId ? MINUTES.find(m=>m.id===editId) : null;
+const editing = editId ? MinutesStore.byId(editId) : null;
 let attachments = editing ? editing.attachments.slice() : [];
 
 function fileIcon(type){ return type === "pdf" ? "📕" : "📄"; }
@@ -261,8 +234,23 @@ $("submitBtn").addEventListener("click", ()=>{
     showToast("タイトルと本文を入力してください");
     return;
   }
+  const data = {
+    cat: $("catSel").value,
+    date: $("dateInput").value,
+    title, body,
+    attachments: attachments.slice()
+  };
   if(window.UnsavedGuard) UnsavedGuard.markClean();
-  showToast(editing ? "✅ 議事録を更新しました" : "✅ 議事録を投稿しました");
+  if(editing){
+    const updated = MinutesStore.updateMinute(editing.id, data);
+    const ann = MinutesStore.annByMinutesId(updated.id);
+    showToast(ann && ann.state === "pending"
+      ? "✅ 議事録を更新しました。連携するお知らせの内容を更新し、配信までの保留時間を10分にリセットしました"
+      : "✅ 議事録を更新しました");
+  }else{
+    MinutesStore.createMinute(data);
+    showToast("✅ 議事録を投稿しました。お知らせを自動生成し、10分後にLINEグループへ配信します");
+  }
   setTimeout(()=>{ location.href = "minutes.html"; }, 900);
 });
 
