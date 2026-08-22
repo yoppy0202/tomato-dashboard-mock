@@ -118,6 +118,12 @@
     background:#fff;border:1.5px solid var(--vine);color:var(--vine-deep);
   }
   .csvnote{font-size:10px;color:var(--sub);text-align:right;margin-top:4px;}
+  .csvguide{
+    font-size:10.5px;color:var(--sub);line-height:1.7;
+    background:var(--floor);border:1px solid var(--line);border-radius:8px;
+    padding:8px 10px;margin-top:6px;
+  }
+  .csvguide b{color:var(--ink);}
 
   .tablewrap{overflow-x:auto;margin-top:8px;border:1px solid var(--line);border-radius:10px;}
   table.list{border-collapse:collapse;width:100%;min-width:490px;font-size:12px;}
@@ -233,6 +239,10 @@
       <button class="btn csvbtn" id="csvBtn">⬇ CSVダウンロード</button>
     </div>
     <div class="csvnote">※絞り込み条件の全件を出力します(Excelでそのまま開けます)</div>
+    <div class="csvguide">
+      CSVはExcel・Googleスプレッドシートなどの<b>表計算アプリで開く</b>ファイルです。<b>PC・タブレットでのご利用がおすすめ</b>です。
+      スマホでもダウンロードはできますが、開くには表計算アプリが必要になります。
+    </div>
 
     <div class="tablewrap">
       <table class="list">
