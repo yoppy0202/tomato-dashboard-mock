@@ -1,0 +1,28 @@
+{
+  "name": "tomato-dashboard-mock",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "directories": {
+    "doc": "docs"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "capture": "node scripts/capture.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/yoppy0202/tomato-dashboard-mock.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/yoppy0202/tomato-dashboard-mock/issues"
+  },
+  "homepage": "https://github.com/yoppy0202/tomato-dashboard-mock#readme",
+  "devDependencies": {
+    "playwright": "^1.62.1"
+  }
+}
