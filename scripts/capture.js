@@ -152,9 +152,10 @@ const SHOTS = [
     file: "16_members.png",
     url: "members.html",
     role: "admin",
-    type: "element",
-    selector: "#memList",
-    desc: "部会員名簿 一覧",
+    // #memList は40名分(約6900px)あり資料写真として長すぎるため、
+    // 実際に開いた際の見え方が伝わるビューポート撮影にする
+    type: "viewport",
+    desc: "部会員名簿(集計・絞り込み・一覧の見え方)",
   },
 ];
 
@@ -163,7 +164,14 @@ async function main() {
   const browser = await chromium.launch();
   const results = [];
 
-  for (const shot of SHOTS) {
+  // 引数でファイル名(の一部)を渡すと、一致するショットだけ撮り直せる
+  // 例: node scripts/capture.js 16_members 07_list_csv
+  const filters = process.argv.slice(2);
+  const targets = filters.length
+    ? SHOTS.filter((s) => filters.some((f) => s.file.includes(f)))
+    : SHOTS;
+
+  for (const shot of targets) {
     const context = await browser.newContext({
       viewport: VIEWPORT,
       deviceScaleFactor: DEVICE_SCALE_FACTOR,
