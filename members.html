@@ -311,45 +311,16 @@
 
 <div class="toast" id="toast"></div>
 
+<script src="assets/members-data.js"></script>
 <script>
 const $ = id => document.getElementById(id);
 
-// ---- ダミー名簿データ(40名。3名を管理者、6名を未連携とする) ----
-const SEI = ["山田","佐藤","鈴木","田中","高橋","伊藤","渡辺","中村","小林","加藤",
-             "吉田","山本","松本","井上","木村","林","清水","斎藤","森","池田"];
-const MEI = ["一郎","次郎","三郎","花子","恵子","太郎","誠","健一","由美","直樹"];
-const ADMIN_IDS = [1, 11, 21];      // 山田 一郎 / 佐藤 一郎 / 鈴木 一郎
-const UNLINKED_IDS = [6, 15, 24, 29, 34, 40];
-
-function fakeLastLogin(id){
-  const day = 22 - (id % 10);
-  const h = 6 + (id % 13);
-  const m = (id * 11) % 60;
-  return `2026/08/${String(Math.max(1, day)).padStart(2,"0")} ${String(h).padStart(2,"0")}:${String(m).padStart(2,"0")}`;
-}
-
-let members = [];
-(function seedMembers(){
-  let id = 1;
-  for(let s=0; s<SEI.length && id<=40; s++){
-    for(let m=0; m<MEI.length && id<=40; m++){
-      const linked = !UNLINKED_IDS.includes(id);
-      members.push({
-        id,
-        name: SEI[s] + " " + MEI[m],
-        role: ADMIN_IDS.includes(id) ? "admin" : "general",
-        lineLinked: linked,
-        lastLogin: linked ? fakeLastLogin(id) : null,
-        active: true
-      });
-      id++;
-    }
-  }
-})();
-let nextId = 41;
+// ---- 名簿データ(assets/members-data.js が正本。announce.htmlと同じ40名を共有) ----
+let members = MembersData.MEMBERS.map(m => Object.assign({}, m));
+let nextId = MembersData.NEXT_ID;
 
 let logs = [
-  { t:"2026/08/01 10:00", body:"初期設定として40名を登録しました", who:"山田" },
+  { t:"2026/08/01 10:00", body:"初期設定として40名を登録しました", who:"佐藤" },
 ];
 
 let currentTab = "all";
@@ -371,7 +342,7 @@ function now(){
   return `${d.getFullYear()}/${p(d.getMonth()+1)}/${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
 }
 function addLog(body){
-  logs.unshift({ t: now(), body, who:"山田" });
+  logs.unshift({ t: now(), body, who:"佐藤" });
   renderLogs();
 }
 function roleLabel(r){ return r === "admin" ? "管理者" : "閲覧"; }

@@ -110,23 +110,33 @@ const SHOTS = [
     role: "admin",
     type: "element",
     selector: "#adminBand",
-    desc: "管理者用ナビ帯",
+    desc: "管理者用ナビ帯(スマホ幅・横スクロールで4項目まで表示)",
+  },
+  {
+    file: "11b_nav_admin_pc.png",
+    url: "index.html",
+    role: "admin",
+    type: "element",
+    selector: "#adminBand",
+    desc: "管理者用ナビ帯(PC幅・6項目すべて横並び)",
+    viewport: { width: 1280, height: 800 },
+    deviceScaleFactor: 1,
   },
   {
     file: "12_admin_input.png",
-    url: "admin.html",
+    url: "admin.html?demo=filled",
     role: "admin",
     type: "element",
     selector: "#accwrap",
-    desc: "マトリクス入力(スマホのアコーディオン表示)",
+    desc: "マトリクス入力(スマホのアコーディオン表示・東京5サイズ入力済み)",
   },
   {
     file: "13_announce_post.png",
-    url: "announce.html",
+    url: "announce.html?demo=filled",
     role: "admin",
     type: "element",
     selector: "#formCard",
-    desc: "お知らせ投稿フォーム＋LINE配信プレビュー",
+    desc: "お知らせ投稿フォーム＋LINE配信プレビュー(本文入力済み)",
   },
   {
     file: "14_announce_read.png",
@@ -173,8 +183,8 @@ async function main() {
 
   for (const shot of targets) {
     const context = await browser.newContext({
-      viewport: VIEWPORT,
-      deviceScaleFactor: DEVICE_SCALE_FACTOR,
+      viewport: shot.viewport || VIEWPORT,
+      deviceScaleFactor: shot.deviceScaleFactor || DEVICE_SCALE_FACTOR,
     });
     // 新規コンテキスト = まっさらな localStorage。撮影前にダミーデータ以外の
     // 溜まった状態(下書き・自動生成お知らせ等)が残らないようにする。

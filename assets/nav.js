@@ -131,7 +131,7 @@
     el.className = (el.className ? el.className + " " : "") + "adminband-wrap";
     el.innerHTML =
       '<div class="adminband-top"><span>🔑 ' + title + '</span>'
-      + '<span class="who">ログイン中:山田(管理者) ・ 操作はすべて記録されます</span></div>'
+      + '<span class="who">ログイン中:佐藤(管理者) ・ 操作はすべて記録されます</span></div>'
       + '<div class="navrow admin">' + pillsHtml(NAV_ADMIN, current) + '</div>';
     bindNav(el);
   }

@@ -376,8 +376,9 @@
 
 <div class="toast" id="toast"></div>
 
+<script src="assets/members-data.js"></script>
 <script>
-const MEMBERS = 40;
+const MEMBERS = MembersData.NAMES.length;
 const HOLD_SEC = 10 * 60;   // 配信までの保留時間(10分)
 const SOFT_LIMIT = 500;     // 推奨文字数
 const LINE_LIMIT = 200;     // これを超えるとLINEは要約+リンク
@@ -392,7 +393,7 @@ const CATS = {
 };
 
 // ---- 議事録由来のお知らせ(役員協議会は管理者のみに配信) ----
-const ADMIN_COUNT = 4; // モックの管理者人数(§3 管理者は2名以上を確保する方針のダミー値)
+const ADMIN_COUNT = MembersData.ADMINS.length; // 名簿(assets/members-data.js)の管理者数と一致させる
 
 function minutesAnnouncementDate(a){
   const d = new Date(a.createdAt);
@@ -414,20 +415,9 @@ let items = [
 let nextId = 4;
 let editingId = null;
 
-// ---- 既読/未読の内訳(管理者ビュー用ダミー名簿) ----
-const MEMBER_NAMES = (function(){
-  const sei = ["山田","佐藤","鈴木","田中","高橋","伊藤","渡辺","中村","小林","加藤",
-               "吉田","山本","松本","井上","木村","林","清水","斎藤","森","池田"];
-  const mei = ["一郎","次郎","三郎","花子","恵子","太郎","誠","健一","由美","直樹"];
-  const out = [];
-  for(let s=0; s<sei.length && out.length<MEMBERS; s++){
-    for(let m=0; m<mei.length && out.length<MEMBERS; m++){
-      out.push(sei[s] + " " + mei[m]);
-    }
-  }
-  return out.slice(0, MEMBERS);
-})();
-const ADMIN_NAMES = ["山田","佐藤","田中","鈴木"]; // 役員協議会由来のお知らせの母数(§3 管理者は2名以上確保の方針のダミー名簿)
+// ---- 既読/未読の内訳(管理者ビュー用ダミー名簿。members.htmlと同じ名簿を共有) ----
+const MEMBER_NAMES = MembersData.NAMES;
+const ADMIN_NAMES = MembersData.ADMINS.map(m => m.name); // 役員協議会由来のお知らせの母数(名簿上の管理者)
 const minutesPanelState = {}; // 議事録由来のお知らせの既読内訳パネル状態(id -> {open, tab})
 
 function fakeReadTime(dateStr, i){
@@ -825,6 +815,15 @@ function checkDraft(){
 updateForm();
 renderList();
 checkDraft();
+
+// ---- デモ用:投稿フォームの入力済み状態を再現(URLパラメータ ?demo=filled) ----
+// 資料用スクリーンショット専用。通常アクセス時(パラメータなし)は空欄のまま
+(function initDemoFilled(){
+  if(new URLSearchParams(location.search).get("demo") !== "filled") return;
+  $("bodyInput").value = "8/24(月)は集出荷場の空調点検のため、搬入受付を1時間繰り上げて7:00からとします。\nご協力をお願いします。";
+  $("catSelect").value = "all";
+  updateForm();
+})();
 </script>
 <script src="assets/minutes-store.js"></script>
 <script src="assets/unsaved-guard.js"></script>

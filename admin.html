@@ -566,6 +566,22 @@ tabP.addEventListener("click",()=>{tabP.classList.add("active");tabC.classList.r
 tabC.addEventListener("click",()=>{tabC.classList.add("active");tabP.classList.remove("active");packSel.selectedIndex=1;updateAllUnits();});
 packSel.addEventListener("change",updateAllUnits);
 updateAllUnits();
+
+// ---- デモ用:入力済み状態を再現(URLパラメータ ?demo=filled) ----
+// 資料用スクリーンショット専用。通常アクセス時(パラメータなし)は空欄のまま
+(function initDemoFilled(){
+  if(new URLSearchParams(location.search).get("demo") !== "filled") return;
+  const DEMO_PRICE = { "東京_2L":256, "東京_L":272, "東京_M":311, "東京_S":270, "東京_2S":244 };
+  const DEMO_QTY   = { "東京_2L":118, "東京_L":109,  "東京_M":144, "東京_S":153, "東京_2S":132 };
+  SIZES.forEach(s=>{
+    const k = "東京_" + s;
+    allInputs.filter(x=>x.dataset.k===k && x.dataset.t==="p").forEach(x=>x.value = DEMO_PRICE[k]);
+    allInputs.filter(x=>x.dataset.k===k && x.dataset.t==="q").forEach(x=>x.value = DEMO_QTY[k]);
+    updateConv(k);
+  });
+  dirty = true;
+  statusTxt.textContent = "未保存の変更があります";
+})();
 </script>
 <script src="assets/unsaved-guard.js"></script>
 <script src="assets/nav.js"></script>
