@@ -37,13 +37,6 @@
   .mockbanner{
     background:#fff5cc;color:#7a5c00;font-size:11px;text-align:center;padding:6px 10px;
   }
-  .adminband{
-    display:flex;align-items:center;justify-content:space-between;gap:8px;
-    background:var(--admin-bg);color:var(--admin);
-    border-bottom:2px solid var(--admin);
-    font-size:12px;font-weight:700;padding:6px 16px;
-  }
-  .adminband .who{font-weight:400;font-size:11px;}
   .topbar{
     padding:14px 16px 12px 16px;border-bottom:1px solid var(--line);
   }
@@ -176,6 +169,37 @@
     display:flex;align-items:center;gap:8px;margin-top:8px;flex-wrap:wrap;
   }
   .reads{font-size:10.5px;color:var(--sub);margin-right:auto;}
+  .readbtn{
+    font-family:inherit;font-size:10.5px;font-weight:700;color:var(--sat);
+    background:none;border:none;padding:0;cursor:pointer;text-decoration:underline;
+    margin-right:auto;text-align:left;
+  }
+  .readpanel{display:none;margin-top:8px;border:1px solid var(--line);border-radius:10px;
+    padding:10px 12px;background:var(--floor);}
+  .readpanel.show{display:block;}
+  .readbar-wrap{display:flex;align-items:center;gap:8px;margin-bottom:8px;}
+  .readbar-track{flex:1;height:8px;border-radius:4px;background:#e3e2df;overflow:hidden;}
+  .readbar-fill{height:100%;background:var(--line-green);}
+  .readbar-txt{font-size:11px;font-weight:700;color:var(--ink);white-space:nowrap;}
+  .readtabs{display:flex;gap:0;border-bottom:1px solid var(--line);margin-bottom:8px;}
+  .readtab{
+    flex:1;text-align:center;font-family:inherit;font-size:11.5px;font-weight:700;
+    color:var(--sub);background:none;border:none;border-bottom:2px solid transparent;
+    padding:6px 0;cursor:pointer;
+  }
+  .readtab.active{color:var(--vine-deep);border-bottom-color:var(--vine);}
+  .readlist{max-height:180px;overflow-y:auto;font-size:12px;line-height:1.9;}
+  .readlist .runit{display:flex;justify-content:space-between;gap:8px;padding:2px;border-bottom:1px dashed var(--line);}
+  .readlist .runit:last-child{border-bottom:none;}
+  .readlist .rname{color:var(--ink);}
+  .readlist .rtime{color:var(--sub);font-size:10.5px;white-space:nowrap;}
+  .draftbar{
+    margin:10px 16px 0 16px;background:#eaf2fa;border:1px solid #c3d8ec;border-radius:8px;
+    padding:8px 10px;font-size:11.5px;color:#1f5fa8;display:flex;gap:8px;align-items:center;flex-wrap:wrap;
+  }
+  .draftbar button{font-family:inherit;font-size:11px;cursor:pointer;border-radius:6px;}
+  .draftbar .restore{font-weight:700;color:#1f5fa8;background:#fff;border:1px solid #1f5fa8;padding:3px 10px;}
+  .draftbar .discard{color:var(--sub);background:none;border:none;text-decoration:underline;}
   .minibtn{
     font-family:inherit;font-size:11.5px;font-weight:700;
     border-radius:8px;padding:5px 12px;cursor:pointer;
@@ -237,10 +261,9 @@
 <body>
 <div class="sheet">
   <div class="mockbanner">⚠ これは検討用のモック画面です。内容はすべてダミーで、本番の仕様・デザインとは異なります。</div>
-  <div class="adminband">
-    <span>🔑 管理モード ─ お知らせ投稿</span>
-    <span class="who">ログイン中:山田(管理者) ・ 操作はすべて記録されます</span>
-  </div>
+  <div id="roleToggleMount"></div>
+  <div id="adminBand"></div>
+  <div id="generalNav"></div>
 
   <div class="topbar">
     <div class="brandrow">
@@ -367,6 +390,52 @@ let items = [
 let nextId = 4;
 let editingId = null;
 
+// ---- 既読/未読の内訳(管理者ビュー用ダミー名簿) ----
+const MEMBER_NAMES = (function(){
+  const sei = ["山田","佐藤","鈴木","田中","高橋","伊藤","渡辺","中村","小林","加藤",
+               "吉田","山本","松本","井上","木村","林","清水","斎藤","森","池田"];
+  const mei = ["一郎","次郎","三郎","花子","恵子","太郎","誠","健一","由美","直樹"];
+  const out = [];
+  for(let s=0; s<sei.length && out.length<MEMBERS; s++){
+    for(let m=0; m<mei.length && out.length<MEMBERS; m++){
+      out.push(sei[s] + " " + mei[m]);
+    }
+  }
+  return out.slice(0, MEMBERS);
+})();
+function fakeReadTime(it, i){
+  const h = 7 + (i % 11);
+  const m = (i*7) % 60;
+  return it.date + " " + String(h).padStart(2,"0") + ":" + String(m).padStart(2,"0");
+}
+function buildReadBreakdown(it){
+  const readers = MEMBER_NAMES.slice(0, it.reads).map((name,i)=>({ name, time: fakeReadTime(it,i) }));
+  const unreaders = MEMBER_NAMES.slice(it.reads);
+  return { readers, unreaders };
+}
+function renderReadPanel(it){
+  const bd = buildReadBreakdown(it);
+  const pct = Math.round(it.reads / MEMBERS * 100);
+  const tab = it._panelTab || "unread";
+  const readersHtml = bd.readers.map(r=>
+    `<div class="runit"><span class="rname">${r.name}</span><span class="rtime">${r.time}</span></div>`
+  ).join("") || '<div class="runit"><span class="rname">まだいません</span></div>';
+  const unreadersHtml = bd.unreaders.map(name=>
+    `<div class="runit"><span class="rname">${name}</span></div>`
+  ).join("") || '<div class="runit"><span class="rname">全員既読です</span></div>';
+  return `<div class="readpanel ${it._panelOpen ? 'show' : ''}">
+    <div class="readbar-wrap">
+      <div class="readbar-track"><div class="readbar-fill" style="width:${pct}%"></div></div>
+      <div class="readbar-txt">${it.reads}/${MEMBERS}人 既読</div>
+    </div>
+    <div class="readtabs">
+      <button class="readtab ${tab==='unread'?'active':''}" data-rtab="${it.id}" data-tab="unread">未読(${bd.unreaders.length})</button>
+      <button class="readtab ${tab==='read'?'active':''}" data-rtab="${it.id}" data-tab="read">既読(${bd.readers.length})</button>
+    </div>
+    <div class="readlist">${tab==='unread' ? unreadersHtml : readersHtml}</div>
+  </div>`;
+}
+
 const $ = id => document.getElementById(id);
 const toast = $("toast");
 let toastTimer;
@@ -454,6 +523,10 @@ function renderList(){
         </div>
       </div>`;
     }
+    const isAdmin = window.TomatoNav && TomatoNav.isAdmin();
+    const readsFoot = isAdmin
+      ? `<button class="readbtn" data-readtoggle="${it.id}">既読 ${it.reads}/${MEMBERS}人 ・ ${it._panelOpen ? '内訳を閉じる ▴' : '内訳を見る ▾'}</button>`
+      : `<span class="reads">既読 ${it.reads}/${MEMBERS}人</span>`;
     return `<div class="aitem">
       <div class="ahead">
         <span class="adate">${it.date}</span>
@@ -462,9 +535,10 @@ function renderList(){
       </div>
       ${bodyHtml}
       <div class="afoot">
-        <span class="reads">既読 ${it.reads}/${MEMBERS}人</span>
+        ${readsFoot}
         <span class="sentnote">配信済みのため編集できません。直したい場合は新規投稿で出し直してください。</span>
       </div>
+      ${isAdmin ? renderReadPanel(it) : ''}
     </div>`;
   }).join("");
 
@@ -473,6 +547,17 @@ function renderList(){
   document.querySelectorAll("[data-more]").forEach(b=>b.addEventListener("click",()=>{
     const it = items.find(x=>x.id === +b.dataset.more);
     it.expanded = !it.expanded;
+    renderList();
+  }));
+  document.querySelectorAll("[data-readtoggle]").forEach(b=>b.addEventListener("click",()=>{
+    const it = items.find(x=>x.id === +b.dataset.readtoggle);
+    it._panelOpen = !it._panelOpen;
+    renderList();
+  }));
+  document.querySelectorAll("[data-rtab]").forEach(b=>b.addEventListener("click",()=>{
+    const it = items.find(x=>x.id === +b.dataset.rtab);
+    it._panelTab = b.dataset.tab;
+    it._panelOpen = true;
     renderList();
   }));
 }
@@ -544,6 +629,8 @@ $("cOk").addEventListener("click",()=>{
     $("catSelect").value = "all";
     updateForm();
   }
+  if(window.UnsavedGuard) UnsavedGuard.markClean();
+  try{ localStorage.removeItem("tomato_announce_draft"); }catch(e){}
   renderList();
 });
 
@@ -571,6 +658,7 @@ function endEdit(){
   $("postBtn").textContent = "投稿する";
   $("cancelEditBtn").style.display = "none";
   updateForm();
+  if(window.UnsavedGuard) UnsavedGuard.markClean();
 }
 $("cancelEditBtn").addEventListener("click",endEdit);
 
@@ -606,10 +694,64 @@ $("demoLongBtn").addEventListener("click",()=>{
 });
 
 // ---- 入力イベント ----
-$("bodyInput").addEventListener("input", updateForm);
+$("bodyInput").addEventListener("input", ()=>{
+  updateForm();
+  if(window.UnsavedGuard) UnsavedGuard.markDirty();
+});
 $("catSelect").addEventListener("change", updateForm);
 
+// ---- 下書きの復元(離脱ガードから保存された分) ----
+function checkDraft(){
+  let raw;
+  try{ raw = localStorage.getItem("tomato_announce_draft"); }catch(e){ return; }
+  if(!raw) return;
+  let d;
+  try{ d = JSON.parse(raw); }catch(e){ return; }
+  if(!d || !d.body) return;
+  const bar = document.createElement("div");
+  bar.className = "draftbar";
+  bar.innerHTML = '💾 保存されていた下書きがあります。'
+    + '<button type="button" class="restore">復元する</button>'
+    + '<button type="button" class="discard">破棄</button>';
+  document.querySelector("section").insertBefore(bar, document.querySelector(".flowsteps"));
+  bar.querySelector(".restore").addEventListener("click",()=>{
+    $("bodyInput").value = d.body;
+    $("catSelect").value = d.cat || "all";
+    if(d.editingId){ startEdit(d.editingId); }
+    updateForm();
+    if(window.UnsavedGuard) UnsavedGuard.markDirty();
+    try{ localStorage.removeItem("tomato_announce_draft"); }catch(e){}
+    bar.remove();
+  });
+  bar.querySelector(".discard").addEventListener("click",()=>{
+    try{ localStorage.removeItem("tomato_announce_draft"); }catch(e){}
+    bar.remove();
+  });
+}
+
 updateForm();
+renderList();
+checkDraft();
+</script>
+<script src="assets/unsaved-guard.js"></script>
+<script src="assets/nav.js"></script>
+<script>
+UnsavedGuard.init({
+  saveAndLeave: function(proceed){
+    const body = $("bodyInput").value.trim();
+    if(body){
+      try{
+        localStorage.setItem("tomato_announce_draft", JSON.stringify({
+          body, cat: $("catSelect").value, editingId, savedAt: Date.now()
+        }));
+      }catch(e){}
+      showToast("💾 下書きを保存しました(次にこのブラウザで開いたときに復元できます)");
+    }
+    UnsavedGuard.markClean();
+    proceed();
+  }
+});
+TomatoNav.init({ current:'announce.html', title:'管理モード ─ お知らせ投稿' });
 renderList();
 </script>
 </body>

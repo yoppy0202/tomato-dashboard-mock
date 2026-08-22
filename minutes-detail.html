@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>議事録詳細(モック)</title>
+<style>
+  :root{
+    --ink:#232323;
+    --sub:#6f6f6f;
+    --line:#e3e2df;
+    --paper:#ffffff;
+    --floor:#faf9f7;
+    --vine:#4c7a52;
+    --vine-deep:#33583a;
+    --tomato:#c94a3c;
+    --tomato-deep:#a63a2f;
+    --sat:#2f6fb0;
+    --sat-bg:#eaf2fa;
+    --admin:#8a6d1f;
+    --admin-bg:#f6efd9;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;background:#efeee9;
+    font-family:"Hiragino Sans","Yu Gothic UI","BIZ UDPGothic",system-ui,-apple-system,sans-serif;
+    color:var(--ink);-webkit-font-smoothing:antialiased;
+  }
+  .phone{
+    max-width:428px;margin:0 auto;background:var(--paper);
+    min-height:100vh;box-shadow:0 0 40px rgba(0,0,0,0.12);padding-bottom:40px;
+  }
+  .mockbanner{background:#fff5cc;color:#7a5c00;font-size:11px;text-align:center;padding:6px 10px;}
+  .topbar{padding:14px 16px 12px 16px;border-bottom:1px solid var(--line);}
+  .brandrow{display:flex;align-items:baseline;justify-content:space-between;}
+  .brand{font-size:15px;font-weight:700;letter-spacing:.02em;}
+  .brand .dot{
+    display:inline-block;width:7px;height:7px;border-radius:50%;
+    background:var(--tomato);margin-right:6px;vertical-align:middle;
+  }
+  .backlink{font-size:11.5px;color:var(--sub);text-decoration:none;}
+  .backlink2{display:inline-block;margin-top:8px;font-size:11.5px;color:var(--sub);text-decoration:none;}
+
+  section{padding:14px 16px 0 16px;}
+
+  .mhead{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:8px;}
+  .mbadge{font-size:10.5px;font-weight:700;border-radius:12px;padding:2px 9px;}
+  .mbadge.zentai{color:var(--sat);background:var(--sat-bg);border:1px solid #c3d8ec;}
+  .mbadge.yakuin{color:var(--admin);background:var(--admin-bg);border:1px solid #e6d9ae;}
+  .mdate{font-size:11.5px;color:var(--sub);}
+
+  h1.mtitle{font-size:18px;font-weight:700;line-height:1.5;margin:0 0 8px 0;}
+  .mmeta{font-size:11px;color:var(--sub);line-height:1.8;margin-bottom:14px;padding-bottom:12px;border-bottom:1px solid var(--line);}
+
+  .mbody h4{font-size:13.5px;font-weight:700;color:var(--vine-deep);margin:18px 0 6px 0;}
+  .mbody h4:first-child{margin-top:0;}
+  .mbody p{font-size:13.5px;line-height:1.95;color:var(--ink);margin:0 0 10px 0;white-space:pre-wrap;}
+
+  .attachwrap{margin-top:18px;}
+  .attachwrap h3{font-size:12px;color:var(--sub);font-weight:700;margin:0 0 8px 0;letter-spacing:.03em;}
+  .afile{
+    display:flex;align-items:center;gap:9px;
+    border:1px solid var(--line);border-radius:10px;
+    padding:9px 11px;margin-bottom:8px;background:var(--floor);
+    text-decoration:none;color:var(--ink);cursor:pointer;
+  }
+  .afile .aicon{font-size:17px;}
+  .afile .aname{flex:1;font-size:12.5px;font-weight:700;word-break:break-all;}
+  .afile .adl{font-size:15px;color:var(--sub);}
+  .noattach{font-size:12px;color:var(--sub);}
+
+  .adminfoot{
+    display:flex;gap:10px;margin-top:22px;padding-top:16px;border-top:1px solid var(--line);
+  }
+  .btn{
+    font-family:inherit;font-size:13px;font-weight:700;color:var(--ink);
+    background:var(--floor);border:1px solid var(--line);border-radius:8px;
+    padding:9px 16px;cursor:pointer;flex:1;text-align:center;text-decoration:none;
+  }
+  .btn.edit{color:var(--vine-deep);background:#eef4ee;border-color:#cfe1d1;}
+  .btn.del{color:var(--tomato-deep);background:#fdf4f3;border-color:#e0b7b1;}
+  .btn:active{transform:translateY(1px);}
+
+  .notfound{padding:60px 16px;text-align:center;color:var(--sub);font-size:13px;line-height:2;}
+
+  .modalbg{
+    display:none;position:fixed;inset:0;z-index:60;background:rgba(30,30,28,.45);
+    align-items:center;justify-content:center;padding:20px;
+  }
+  .modalbg.show{display:flex;}
+  .modal{
+    background:#fff;border-radius:14px;max-width:380px;width:100%;
+    padding:20px 20px 16px 20px;box-shadow:0 12px 40px rgba(0,0,0,.25);
+  }
+  .modal .mtitle2{font-size:14.5px;font-weight:700;margin-bottom:10px;color:var(--tomato-deep);}
+  .modal .mbody2{font-size:13px;line-height:1.8;}
+  .modal .mnote{font-size:11px;color:var(--sub);margin-top:8px;line-height:1.7;}
+  .modal .mbtns{display:flex;gap:10px;justify-content:flex-end;margin-top:16px;}
+  .modal .mbtns .btn{flex:none;}
+
+  .toast{
+    position:fixed;left:50%;bottom:24px;transform:translateX(-50%);
+    background:var(--ink);color:#fff;font-size:12px;border-radius:20px;
+    padding:9px 16px;opacity:0;transition:opacity .25s;pointer-events:none;
+    max-width:90%;text-align:center;z-index:80;line-height:1.6;
+  }
+  .toast.show{opacity:.94;}
+</style>
+</head>
+<body>
+<div class="phone">
+  <div class="mockbanner">⚠ これは検討用のモック画面です。内容はすべてダミーで、本番の仕様・デザインとは異なります。</div>
+  <div id="roleToggleMount"></div>
+  <div id="adminBand"></div>
+  <div id="generalNav"></div>
+
+  <div class="topbar">
+    <div class="brandrow">
+      <div class="brand"><span class="dot"></span>ミニトマト部会 出荷情報</div>
+      <a class="backlink" href="index.html">← TOPへ戻る</a>
+    </div>
+    <a class="backlink2" href="minutes.html" id="toListLink">← 議事録一覧へ戻る</a>
+  </div>
+
+  <section id="content"></section>
+</div>
+
+<!-- 削除の確認 -->
+<div class="modalbg" id="delBg">
+  <div class="modal">
+    <div class="mtitle2">この議事録を削除しますか?</div>
+    <div class="mbody2">一覧・検索から即時に取り下げます。削除は取り消せません。</div>
+    <div class="mnote">この操作は監査ログに記録されます。</div>
+    <div class="mbtns">
+      <button class="btn" id="dCancel">やめる</button>
+      <button class="btn del" id="dOk">削除する</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// minutes.html と同じダミーデータ(モックのため単純にページごとに複製)
+const MINUTES = [
+  { id:1, cat:"zentai", date:"2026-08-10", title:"8月度 定例会議事録", author:"山田", updated:"2026-08-11 10:00",
+    body:"## 議題1: 8月の出荷状況について\n7月後半から出荷量が回復し、東京・神奈川向けを中心に単価も安定してきている。2S・S規格の引き合いが強く、選別への協力を継続してお願いする。\n\n## 議題2: 集出荷場メンテナンスについて\n8/24(月)に空調設備の点検を実施するため、当日は搬入受付を1時間繰り上げて7:00からとする。詳細は掲示物およびお知らせを参照。\n\n## 議題3: 部会総会の日程確認\n8/28(金)19時より公民館にて開催。議案は追って配布する。",
+    attachments:[{name:"集出荷場メンテナンス案内.pdf",type:"pdf"},{name:"8月度議案資料.docx",type:"doc"}] },
+  { id:2, cat:"yakuin", date:"2026-08-05", title:"役員協議会(8月)議事録", author:"佐藤", updated:"2026-08-05 19:10",
+    body:"## 議題1: 単価交渉の進捗\n主要3市場との単価交渉について、現行水準からの改定案を協議した。詳細は非公開資料を参照。\n\n## 議題2: 部会費の見直し\n次年度の部会費について、運営コストの増加を踏まえた見直し案を検討した。継続協議とする。",
+    attachments:[{name:"単価交渉方針(非公開).pdf",type:"pdf"}] },
+  { id:3, cat:"zentai", date:"2026-07-13", title:"7月度 定例会議事録", author:"山田", updated:"2026-07-14 09:30",
+    body:"## 議題1: 7月の出荷実績\n梅雨明け後の高温により、上位規格の比率がやや低下した。来月に向けて選別方法の再確認を行う。\n\n## 議題2: 新規市場開拓について\n北九州市場からの追加引き合いがあり、試験的な出荷を検討する。",
+    attachments:[] },
+  { id:4, cat:"yakuin", date:"2026-07-01", title:"役員協議会(7月)議事録 ─ 単価交渉方針", author:"佐藤", updated:"2026-07-02 08:00",
+    body:"## 議題1: 単価交渉方針\n来期の単価交渉にあたり、各市場の取引実績データをもとに交渉方針を策定した。\n\n## 議題2: 役員体制について\n次期役員候補について意見交換を行った。",
+    attachments:[{name:"交渉方針メモ.docx",type:"doc"}] },
+  { id:5, cat:"zentai", date:"2026-06-08", title:"6月度 定例会議事録", author:"田中", updated:"2026-06-09 11:00",
+    body:"## 議題1: 6月の出荷状況\n梅雨時期の天候不順により出荷量にばらつきが見られた。曜日別の平準化について再度周知する。\n\n## 議題2: 資材の共同購入\n出荷用資材の共同購入について、業者見積りを比較検討した。",
+    attachments:[{name:"資材見積り比較.pdf",type:"pdf"},{name:"6月度議事メモ.docx",type:"doc"}] },
+  { id:6, cat:"zentai", date:"2026-05-11", title:"総会議事録(2026年度)", author:"山田", updated:"2026-05-12 14:20",
+    body:"## 議題1: 前年度事業報告\n前年度の出荷実績・単価動向について報告があった。\n\n## 議題2: 今年度事業計画\n今年度の目標出荷量および品質向上の取り組みについて審議し、承認された。\n\n## 議題3: 役員選任\n新役員を選任した。詳細は別紙名簿を参照。",
+    attachments:[{name:"前年度事業報告書.pdf",type:"pdf"},{name:"今年度事業計画書.pdf",type:"pdf"},{name:"新役員名簿.docx",type:"doc"}] },
+  { id:7, cat:"yakuin", date:"2026-04-03", title:"役員協議会(4月)議事録", author:"佐藤", updated:"2026-04-03 20:00",
+    body:"## 議題1: 部会費の見直し(続き)\n前回に続き、部会費の見直しについて協議した。次回総会にて提案する方向で合意。\n\n## 議題2: 資材共同購入の契約\n資材の共同購入契約について、業者選定を行った。",
+    attachments:[] },
+  { id:8, cat:"zentai", date:"2026-03-09", title:"3月度 定例会議事録", author:"田中", updated:"2026-03-10 09:00",
+    body:"## 議題1: 3月の出荷実績\n年度末に向けて出荷量が増加傾向。市場別の単価動向を共有した。\n\n## 議題2: 次年度の体制について\n次年度の選果体制について意見交換を行った。",
+    attachments:[{name:"3月度出荷実績表.pdf",type:"pdf"}] }
+];
+const CATS = {
+  zentai: { label:"全体協議会", cls:"zentai" },
+  yakuin: { label:"役員協議会", cls:"yakuin" }
+};
+
+const $ = id => document.getElementById(id);
+const toast = () => $("toast");
+let toastTimer;
+function showToast(msg){
+  toast().textContent = msg;
+  toast().classList.add("show");
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(()=>toast().classList.remove("show"), 2800);
+}
+
+function bodyToHtml(body){
+  return body.split(/\n\n+/).map(block=>{
+    const m = block.match(/^##\s*(.+)/);
+    if(m){
+      const rest = block.slice(m[0].length).trim();
+      return `<h4>${m[1]}</h4>` + (rest ? `<p>${rest}</p>` : "");
+    }
+    return `<p>${block}</p>`;
+  }).join("");
+}
+
+function fileIcon(type){
+  return type === "pdf" ? "📕" : "📄";
+}
+
+function getId(){
+  const p = new URLSearchParams(location.search);
+  return Number(p.get("id"));
+}
+
+function findVisible(id){
+  const isAdmin = window.TomatoNav && TomatoNav.isAdmin();
+  const m = MINUTES.find(x=>x.id===id);
+  if(!m) return null;
+  if(m.cat === "yakuin" && !isAdmin) return null; // 存在自体を見せない
+  return m;
+}
+
+function render(){
+  const isAdmin = window.TomatoNav && TomatoNav.isAdmin();
+  const m = findVisible(getId());
+  if(!m){
+    $("content").innerHTML = `<div class="notfound">指定された議事録が見つかりません。<br>
+      <a class="backlink2" href="minutes.html">← 議事録一覧へ戻る</a></div>`;
+    return;
+  }
+  const cat = CATS[m.cat];
+  const attachHtml = m.attachments.length
+    ? m.attachments.map(a=>`<div class="afile" data-dl="${a.name}"><span class="aicon">${fileIcon(a.type)}</span><span class="aname">${a.name}</span><span class="adl">⬇</span></div>`).join("")
+    : '<div class="noattach">添付ファイルはありません</div>';
+  const adminFoot = isAdmin
+    ? `<div class="adminfoot">
+        <a class="btn edit" href="minutes-edit.html?id=${m.id}">✏️ 編集</a>
+        <button class="btn del" id="delBtn">🗑 削除</button>
+      </div>`
+    : "";
+  $("content").innerHTML = `
+    <div class="mhead">
+      <span class="mbadge ${cat.cls}">${cat.label}</span>
+      <span class="mdate">${m.date.replace(/-/g,"/")}</span>
+    </div>
+    <h1 class="mtitle">${m.title}</h1>
+    <div class="mmeta">投稿者:${m.author} ・ 最終更新:${m.updated}</div>
+    <div class="mbody">${bodyToHtml(m.body)}</div>
+    <div class="attachwrap">
+      <h3>添付ファイル</h3>
+      ${attachHtml}
+    </div>
+    ${adminFoot}
+  `;
+  $("content").querySelectorAll("[data-dl]").forEach(el=>{
+    el.addEventListener("click", ()=> showToast("(モックのためダウンロードはできません)"));
+  });
+  const delBtn = $("delBtn");
+  if(delBtn) delBtn.addEventListener("click", ()=> $("delBg").classList.add("show"));
+}
+
+$("dCancel").addEventListener("click", ()=> $("delBg").classList.remove("show"));
+$("dOk").addEventListener("click", ()=>{
+  $("delBg").classList.remove("show");
+  showToast("🗑 削除しました(モックのため一覧には反映されません)");
+});
+
+render();
+</script>
+<script src="assets/nav.js"></script>
+<script>
+TomatoNav.init({ current:'minutes-detail.html', title:'管理者ナビゲーション' });
+render();
+</script>
+</body>
+</html>

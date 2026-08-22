@@ -49,15 +49,6 @@
   .backlink{font-size:11.5px;color:var(--sub);text-decoration:none;}
   .pagetitle{font-size:13px;font-weight:700;color:var(--vine-deep);margin-top:8px;}
 
-  /* デモ用:管理者表示スイッチ */
-  .demoswitch{
-    display:flex;align-items:center;gap:6px;
-    margin:10px 16px 0 16px;
-    background:var(--admin-bg);border:1px dashed var(--admin);
-    border-radius:8px;padding:6px 10px;
-    font-size:11px;color:var(--admin);
-  }
-
   section{padding:12px 16px 0 16px;}
   h3{
     font-size:12px;color:var(--sub);font-weight:700;
@@ -178,17 +169,15 @@
 <body>
 <div class="phone">
   <div class="mockbanner">⚠ これは検討用のモック画面です。数値はすべてダミーで、本番の仕様・デザインとは異なります。</div>
+  <div id="roleToggleMount"></div>
+  <div id="adminBand"></div>
+  <div id="generalNav"></div>
   <div class="topbar">
     <div class="brandrow">
       <div class="brand"><span class="dot"></span>ミニトマト部会 出荷情報</div>
       <a class="backlink" href="index.html">← TOPへ戻る</a>
     </div>
     <div class="pagetitle">📋 データ一覧</div>
-  </div>
-
-  <div class="demoswitch">
-    <input type="checkbox" id="adminToggle">
-    <label for="adminToggle">【デモ用】管理者としてログインした場合の表示(編集ボタンが現れます)</label>
   </div>
 
   <section>
@@ -437,12 +426,12 @@ document.addEventListener("click",(e)=>{
   if(e.target.classList.contains("editbtn")) showToast("(モック)管理者は入力画面でこの日のデータを直接修正できます");
 });
 
-// ---- 管理者表示トグル ----
-document.getElementById("adminToggle").addEventListener("change",(e)=>{
-  document.body.classList.toggle("adminview", e.target.checked);
-});
-
 applyFilter();
+</script>
+<script src="assets/nav.js"></script>
+<script>
+TomatoNav.init({ current:'list.html', title:'管理者ナビゲーション' });
+document.body.classList.toggle("adminview", TomatoNav.isAdmin());
 </script>
 </body>
 </html>

@@ -47,20 +47,6 @@
     text-align:center;
     padding:6px 10px;
   }
-  /* ---- 管理モードを常時示す帯 ---- */
-  .adminband{
-    display:flex;
-    align-items:center;
-    justify-content:space-between;
-    gap:8px;
-    background:var(--admin-bg);
-    color:var(--admin);
-    border-bottom:2px solid var(--admin);
-    font-size:12px;
-    font-weight:700;
-    padding:6px 16px;
-  }
-  .adminband .who{font-weight:400;font-size:11px;}
   .topbar{
     padding:14px 16px 0 16px;
     position:sticky;
@@ -267,10 +253,9 @@
 <body>
 <div class="sheet">
   <div class="mockbanner">⚠ これは検討用のモック画面です。数値はすべてダミーで、本番の仕様・デザインとは異なります。</div>
-  <div class="adminband">
-    <span>🔑 管理モード ─ 数量・単価入力</span>
-    <span class="who">ログイン中:山田(管理者) ・ 操作はすべて記録されます</span>
-  </div>
+  <div id="roleToggleMount"></div>
+  <div id="adminBand"></div>
+  <div id="generalNav"></div>
 
   <div class="topbar">
     <div class="brandrow">
@@ -436,6 +421,7 @@ allInputs.forEach(el=>{
     syncTwin(el);
     if(el.dataset.t==="q") updateConv(el.dataset.k);
     dirty = true;
+    if(window.UnsavedGuard) UnsavedGuard.markDirty();
     statusTxt.textContent = "未保存の変更があります";
     el.classList.remove("flag");
   });
@@ -513,10 +499,15 @@ function openConfirm(){
     `<b>${day} / ${method} / ${pack}</b> のデータを確定し、閲覧画面に反映します。<br>入力済み:単価 ${filled}セル`;
   confirmBg.classList.add("show");
 }
-document.getElementById("mCancel").addEventListener("click",()=>confirmBg.classList.remove("show"));
+let leaveProceed = null;
+document.getElementById("mCancel").addEventListener("click",()=>{
+  confirmBg.classList.remove("show");
+  leaveProceed = null;
+});
 document.getElementById("mOk").addEventListener("click",()=>{
   confirmBg.classList.remove("show");
   doSave(true);
+  if(leaveProceed){ const p = leaveProceed; leaveProceed = null; p(); }
 });
 function doSave(commit){
   checkMsg.className = "checkbox-msg ok show";
@@ -529,6 +520,7 @@ function doSave(commit){
     statusTxt.textContent = "下書き保存済み(" + nowStr() + ")";
   }
   dirty = false;
+  if(window.UnsavedGuard) UnsavedGuard.markClean();
 }
 function nowStr(){
   const d = new Date();
@@ -574,6 +566,17 @@ tabP.addEventListener("click",()=>{tabP.classList.add("active");tabC.classList.r
 tabC.addEventListener("click",()=>{tabC.classList.add("active");tabP.classList.remove("active");packSel.selectedIndex=1;updateAllUnits();});
 packSel.addEventListener("change",updateAllUnits);
 updateAllUnits();
+</script>
+<script src="assets/unsaved-guard.js"></script>
+<script src="assets/nav.js"></script>
+<script>
+UnsavedGuard.init({
+  saveAndLeave: function(proceed){
+    leaveProceed = proceed;
+    openConfirm();
+  }
+});
+TomatoNav.init({ current:'admin.html', title:'管理モード ─ 数量・単価入力' });
 </script>
 </body>
 </html>

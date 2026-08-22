@@ -34,12 +34,6 @@
     min-height:100vh;box-shadow:0 0 40px rgba(0,0,0,0.12);padding-bottom:40px;
   }
   .mockbanner{background:#fff5cc;color:#7a5c00;font-size:11px;text-align:center;padding:6px 10px;}
-  .adminband{
-    display:flex;align-items:center;justify-content:space-between;gap:8px;
-    background:var(--admin-bg);color:var(--admin);border-bottom:2px solid var(--admin);
-    font-size:12px;font-weight:700;padding:6px 16px;
-  }
-  .adminband .who{font-weight:400;font-size:11px;}
   .topbar{padding:14px 16px 12px 16px;border-bottom:1px solid var(--line);}
   .brandrow{display:flex;align-items:baseline;justify-content:space-between;}
   .brand{font-size:15px;font-weight:700;letter-spacing:.02em;}
@@ -148,10 +142,9 @@
 <body>
 <div class="sheet">
   <div class="mockbanner">⚠ これは検討用のモック画面です。内容はすべてダミーで、本番の仕様・デザインとは異なります。</div>
-  <div class="adminband">
-    <span>🔑 管理モード ─ 市場の管理</span>
-    <span class="who">ログイン中:山田(管理者) ・ 操作はすべて記録されます</span>
-  </div>
+  <div id="roleToggleMount"></div>
+  <div id="adminBand"></div>
+  <div id="generalNav"></div>
 
   <div class="topbar">
     <div class="brandrow">
@@ -358,7 +351,11 @@ $("addBtn").addEventListener("click",()=>{
   $("addBody").innerHTML = `<b>${name}</b> を出荷先の市場として追加します。`;
   $("addBg").classList.add("show");
 });
-$("addCancel").addEventListener("click",()=>$("addBg").classList.remove("show"));
+let leaveProceed = null;
+$("addCancel").addEventListener("click",()=>{
+  $("addBg").classList.remove("show");
+  leaveProceed = null;
+});
 $("addOk").addEventListener("click",()=>{
   const name = $("newName").value.trim();
   const lastActive = markets.map(m=>m.active).lastIndexOf(true);
@@ -368,6 +365,11 @@ $("addOk").addEventListener("click",()=>{
   renderMarkets();
   addLog(`<b>${name}</b>を追加しました`);
   showToast(`「${name}」を追加しました。入力画面・データ一覧の絞り込みに表示されます`);
+  if(window.UnsavedGuard) UnsavedGuard.markClean();
+  if(leaveProceed){ const p = leaveProceed; leaveProceed = null; p(); }
+});
+$("newName").addEventListener("input",()=>{
+  if(window.UnsavedGuard) UnsavedGuard.markDirty();
 });
 
 // ---- 変更履歴 ----
@@ -381,6 +383,19 @@ function renderLogs(){
 
 renderMarkets();
 renderLogs();
+</script>
+<script src="assets/unsaved-guard.js"></script>
+<script src="assets/nav.js"></script>
+<script>
+UnsavedGuard.init({
+  saveAndLeave: function(proceed){
+    const name = $("newName").value.trim();
+    if(!name){ UnsavedGuard.markClean(); proceed(); return; }
+    leaveProceed = proceed;
+    $("addBtn").click();
+  }
+});
+TomatoNav.init({ current:'markets.html', title:'管理モード ─ 市場の管理' });
 </script>
 </body>
 </html>

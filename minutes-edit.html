@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>議事録の投稿・編集(モック)</title>
+<style>
+  :root{
+    --ink:#232323;
+    --sub:#6f6f6f;
+    --line:#e3e2df;
+    --paper:#ffffff;
+    --floor:#faf9f7;
+    --vine:#4c7a52;
+    --vine-deep:#33583a;
+    --tomato:#c94a3c;
+    --tomato-deep:#a63a2f;
+    --admin:#8a6d1f;
+    --admin-bg:#f6efd9;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;background:#efeee9;
+    font-family:"Hiragino Sans","Yu Gothic UI","BIZ UDPGothic",system-ui,-apple-system,sans-serif;
+    color:var(--ink);-webkit-font-smoothing:antialiased;
+  }
+  .sheet{
+    max-width:640px;margin:0 auto;background:var(--paper);
+    min-height:100vh;box-shadow:0 0 40px rgba(0,0,0,0.12);padding-bottom:40px;
+  }
+  .mockbanner{background:#fff5cc;color:#7a5c00;font-size:11px;text-align:center;padding:6px 10px;}
+  .topbar{padding:14px 16px 12px 16px;border-bottom:1px solid var(--line);}
+  .brandrow{display:flex;align-items:baseline;justify-content:space-between;}
+  .brand{font-size:15px;font-weight:700;letter-spacing:.02em;}
+  .brand .dot{
+    display:inline-block;width:7px;height:7px;border-radius:50%;
+    background:var(--tomato);margin-right:6px;vertical-align:middle;
+  }
+  .backlink{font-size:11.5px;color:var(--sub);text-decoration:none;}
+  .pagetitle{font-size:13px;font-weight:700;color:var(--vine-deep);margin-top:8px;}
+
+  section{padding:14px 16px 0 16px;}
+  .fgrid{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px;}
+  label.fld{
+    font-size:11.5px;color:var(--sub);font-weight:700;display:flex;flex-direction:column;gap:4px;flex:1;min-width:130px;
+  }
+  label.fld.grow{flex:2;min-width:220px;}
+  select,input[type=date],input[type=text]{
+    font-family:inherit;font-size:13.5px;font-weight:700;color:var(--ink);
+    background:var(--floor);border:1px solid var(--line);border-radius:8px;
+    padding:9px 10px;
+  }
+  input[type=text]{font-weight:400;}
+  textarea{
+    width:100%;min-height:260px;resize:vertical;
+    font-family:inherit;font-size:13.5px;line-height:1.8;
+    border:1px solid var(--line);border-radius:8px;padding:12px;
+    background:#fff;color:var(--ink);
+  }
+  textarea:focus, select:focus, input:focus{outline:2px solid var(--vine);outline-offset:-1px;}
+  .hint{font-size:11px;color:var(--sub);line-height:1.7;margin:6px 0 14px 0;}
+
+  h3{font-size:12px;color:var(--sub);font-weight:700;margin:4px 0 8px 0;letter-spacing:.03em;}
+
+  .uploadbox{
+    border:1px dashed var(--line);border-radius:10px;padding:12px;background:var(--floor);
+  }
+  .uploadbox input[type=file]{font-size:12px;}
+  .filelist{margin-top:10px;}
+  .fileitem{
+    display:flex;align-items:center;gap:8px;
+    border:1px solid var(--line);border-radius:8px;background:#fff;
+    padding:7px 10px;margin-bottom:6px;font-size:12.5px;
+  }
+  .fileitem .fic{font-size:15px;}
+  .fileitem .fname{flex:1;word-break:break-all;}
+  .fileitem .frm{
+    font-family:inherit;font-size:11px;color:var(--tomato-deep);background:none;border:none;cursor:pointer;
+  }
+
+  .formfoot{
+    display:flex;gap:10px;margin-top:20px;padding-top:16px;border-top:1px solid var(--line);
+  }
+  .btn{
+    font-family:inherit;font-size:13.5px;font-weight:700;color:var(--ink);
+    background:var(--floor);border:1px solid var(--line);border-radius:8px;
+    padding:11px 16px;cursor:pointer;flex:1;
+  }
+  .btn.primary{background:var(--vine);border-color:var(--vine-deep);color:#fff;}
+  .btn:active{transform:translateY(1px);}
+
+  .toast{
+    position:fixed;left:50%;bottom:24px;transform:translateX(-50%);
+    background:var(--ink);color:#fff;font-size:12px;border-radius:20px;
+    padding:9px 16px;opacity:0;transition:opacity .25s;pointer-events:none;
+    max-width:90%;text-align:center;z-index:80;line-height:1.6;
+  }
+  .toast.show{opacity:.94;}
+
+  .blocked{
+    padding:60px 16px;text-align:center;color:var(--sub);font-size:13px;line-height:2;
+  }
+</style>
+</head>
+<body>
+<div class="sheet">
+  <div class="mockbanner">⚠ これは検討用のモック画面です。内容はすべてダミーで、本番の仕様・デザインとは異なります。</div>
+  <div id="roleToggleMount"></div>
+  <div id="adminBand"></div>
+  <div id="generalNav"></div>
+
+  <div class="topbar">
+    <div class="brandrow">
+      <div class="brand"><span class="dot"></span>ミニトマト部会 出荷情報</div>
+      <a class="backlink" href="index.html">← TOPへ戻る</a>
+    </div>
+    <a class="backlink" href="minutes.html" style="display:block;margin-top:4px;">← 議事録一覧へ戻る</a>
+    <div class="pagetitle" id="pageTitle">🗒 議事録の投稿</div>
+  </div>
+
+  <section id="formArea">
+    <div class="fgrid">
+      <label class="fld">カテゴリ
+        <select id="catSel">
+          <option value="zentai">全体協議会</option>
+          <option value="yakuin">役員協議会</option>
+        </select>
+      </label>
+      <label class="fld">日付
+        <input type="date" id="dateInput">
+      </label>
+    </div>
+    <label class="fld grow" style="margin-bottom:12px;">タイトル
+      <input type="text" id="titleInput" placeholder="例:8月度 定例会議事録" maxlength="80">
+    </label>
+    <label class="fld" style="margin-bottom:6px;">本文</label>
+    <textarea id="bodyInput" placeholder="議題ごとに「## 見出し」を付けて入力すると、詳細画面で見出しとして表示されます。&#10;&#10;例:&#10;## 議題1: ○○について&#10;本文……"></textarea>
+    <div class="hint">「## 」で始まる行は詳細画面で見出しとして表示されます。空行で段落を区切ってください。</div>
+
+    <h3>添付ファイル(任意・複数可)</h3>
+    <div class="uploadbox">
+      <input type="file" id="fileInput" accept=".pdf,.doc,.docx" multiple>
+      <div class="filelist" id="fileList"></div>
+    </div>
+    <div class="hint">PDF・Wordファイルを添付できます(モックのため実際のアップロードは行われません)。</div>
+
+    <div class="formfoot">
+      <button class="btn" id="draftBtn">下書き保存</button>
+      <button class="btn primary" id="submitBtn">投稿する</button>
+    </div>
+  </section>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// minutes.html と同じダミーデータ(モックのため単純にページごとに複製)
+const MINUTES = [
+  { id:1, cat:"zentai", date:"2026-08-10", title:"8月度 定例会議事録", author:"山田", updated:"2026-08-11 10:00",
+    body:"## 議題1: 8月の出荷状況について\n7月後半から出荷量が回復し、東京・神奈川向けを中心に単価も安定してきている。2S・S規格の引き合いが強く、選別への協力を継続してお願いする。\n\n## 議題2: 集出荷場メンテナンスについて\n8/24(月)に空調設備の点検を実施するため、当日は搬入受付を1時間繰り上げて7:00からとする。詳細は掲示物およびお知らせを参照。\n\n## 議題3: 部会総会の日程確認\n8/28(金)19時より公民館にて開催。議案は追って配布する。",
+    attachments:[{name:"集出荷場メンテナンス案内.pdf",type:"pdf"},{name:"8月度議案資料.docx",type:"doc"}] },
+  { id:2, cat:"yakuin", date:"2026-08-05", title:"役員協議会(8月)議事録", author:"佐藤", updated:"2026-08-05 19:10",
+    body:"## 議題1: 単価交渉の進捗\n主要3市場との単価交渉について、現行水準からの改定案を協議した。詳細は非公開資料を参照。\n\n## 議題2: 部会費の見直し\n次年度の部会費について、運営コストの増加を踏まえた見直し案を検討した。継続協議とする。",
+    attachments:[{name:"単価交渉方針(非公開).pdf",type:"pdf"}] },
+  { id:3, cat:"zentai", date:"2026-07-13", title:"7月度 定例会議事録", author:"山田", updated:"2026-07-14 09:30",
+    body:"## 議題1: 7月の出荷実績\n梅雨明け後の高温により、上位規格の比率がやや低下した。来月に向けて選別方法の再確認を行う。\n\n## 議題2: 新規市場開拓について\n北九州市場からの追加引き合いがあり、試験的な出荷を検討する。",
+    attachments:[] },
+  { id:4, cat:"yakuin", date:"2026-07-01", title:"役員協議会(7月)議事録 ─ 単価交渉方針", author:"佐藤", updated:"2026-07-02 08:00",
+    body:"## 議題1: 単価交渉方針\n来期の単価交渉にあたり、各市場の取引実績データをもとに交渉方針を策定した。\n\n## 議題2: 役員体制について\n次期役員候補について意見交換を行った。",
+    attachments:[{name:"交渉方針メモ.docx",type:"doc"}] },
+  { id:5, cat:"zentai", date:"2026-06-08", title:"6月度 定例会議事録", author:"田中", updated:"2026-06-09 11:00",
+    body:"## 議題1: 6月の出荷状況\n梅雨時期の天候不順により出荷量にばらつきが見られた。曜日別の平準化について再度周知する。\n\n## 議題2: 資材の共同購入\n出荷用資材の共同購入について、業者見積りを比較検討した。",
+    attachments:[{name:"資材見積り比較.pdf",type:"pdf"},{name:"6月度議事メモ.docx",type:"doc"}] },
+  { id:6, cat:"zentai", date:"2026-05-11", title:"総会議事録(2026年度)", author:"山田", updated:"2026-05-12 14:20",
+    body:"## 議題1: 前年度事業報告\n前年度の出荷実績・単価動向について報告があった。\n\n## 議題2: 今年度事業計画\n今年度の目標出荷量および品質向上の取り組みについて審議し、承認された。\n\n## 議題3: 役員選任\n新役員を選任した。詳細は別紙名簿を参照。",
+    attachments:[{name:"前年度事業報告書.pdf",type:"pdf"},{name:"今年度事業計画書.pdf",type:"pdf"},{name:"新役員名簿.docx",type:"doc"}] },
+  { id:7, cat:"yakuin", date:"2026-04-03", title:"役員協議会(4月)議事録", author:"佐藤", updated:"2026-04-03 20:00",
+    body:"## 議題1: 部会費の見直し(続き)\n前回に続き、部会費の見直しについて協議した。次回総会にて提案する方向で合意。\n\n## 議題2: 資材共同購入の契約\n資材の共同購入契約について、業者選定を行った。",
+    attachments:[] },
+  { id:8, cat:"zentai", date:"2026-03-09", title:"3月度 定例会議事録", author:"田中", updated:"2026-03-10 09:00",
+    body:"## 議題1: 3月の出荷実績\n年度末に向けて出荷量が増加傾向。市場別の単価動向を共有した。\n\n## 議題2: 次年度の体制について\n次年度の選果体制について意見交換を行った。",
+    attachments:[{name:"3月度出荷実績表.pdf",type:"pdf"}] }
+];
+
+const $ = id => document.getElementById(id);
+let toastTimer;
+function showToast(msg){
+  $("toast").textContent = msg;
+  $("toast").classList.add("show");
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(()=>$("toast").classList.remove("show"), 2800);
+}
+
+function getId(){
+  const p = new URLSearchParams(location.search);
+  const v = p.get("id");
+  return v ? Number(v) : null;
+}
+const editId = getId();
+const editing = editId ? MINUTES.find(m=>m.id===editId) : null;
+let attachments = editing ? editing.attachments.slice() : [];
+
+function fileIcon(type){ return type === "pdf" ? "📕" : "📄"; }
+function guessType(name){ return /\.pdf$/i.test(name) ? "pdf" : "doc"; }
+
+function renderFileList(){
+  $("fileList").innerHTML = attachments.length
+    ? attachments.map((a,i)=>`<div class="fileitem">
+        <span class="fic">${fileIcon(a.type)}</span>
+        <span class="fname">${a.name}</span>
+        <button type="button" class="frm" data-rm="${i}">削除</button>
+      </div>`).join("")
+    : '';
+  $("fileList").querySelectorAll("[data-rm]").forEach(b=>{
+    b.addEventListener("click", ()=>{
+      attachments.splice(Number(b.dataset.rm), 1);
+      renderFileList();
+      markDirty();
+    });
+  });
+}
+
+function markDirty(){ if(window.UnsavedGuard) UnsavedGuard.markDirty(); }
+
+function fillForm(){
+  if(editing){
+    $("pageTitle").textContent = "🗒 議事録の編集";
+    $("catSel").value = editing.cat;
+    $("dateInput").value = editing.date;
+    $("titleInput").value = editing.title;
+    $("bodyInput").value = editing.body;
+    $("submitBtn").textContent = "更新する";
+  }else{
+    $("pageTitle").textContent = "🗒 議事録の投稿";
+    $("dateInput").value = "2026-08-22";
+    $("submitBtn").textContent = "投稿する";
+  }
+  renderFileList();
+}
+
+function draftSave(proceed){
+  const key = "tomato_minutes_draft_" + (editId || "new");
+  try{
+    localStorage.setItem(key, JSON.stringify({
+      cat: $("catSel").value, date: $("dateInput").value,
+      title: $("titleInput").value, body: $("bodyInput").value,
+      savedAt: Date.now()
+    }));
+  }catch(e){}
+  showToast("💾 下書きとして保存しました。投稿するまで一覧には反映されません。");
+  if(window.UnsavedGuard) UnsavedGuard.markClean();
+  if(typeof proceed === "function") proceed();
+}
+
+$("draftBtn").addEventListener("click", ()=> draftSave());
+
+$("submitBtn").addEventListener("click", ()=>{
+  const title = $("titleInput").value.trim();
+  const body = $("bodyInput").value.trim();
+  if(!title || !body){
+    showToast("タイトルと本文を入力してください");
+    return;
+  }
+  if(window.UnsavedGuard) UnsavedGuard.markClean();
+  showToast(editing ? "✅ 議事録を更新しました" : "✅ 議事録を投稿しました");
+  setTimeout(()=>{ location.href = "minutes.html"; }, 900);
+});
+
+$("fileInput").addEventListener("change", (e)=>{
+  Array.from(e.target.files).forEach(f=>{
+    attachments.push({ name:f.name, type:guessType(f.name) });
+  });
+  e.target.value = "";
+  renderFileList();
+  markDirty();
+});
+
+["catSel","dateInput","titleInput","bodyInput"].forEach(id=>{
+  $(id).addEventListener("input", markDirty);
+  $(id).addEventListener("change", markDirty);
+});
+
+fillForm();
+</script>
+<script src="assets/unsaved-guard.js"></script>
+<script src="assets/nav.js"></script>
+<script>
+UnsavedGuard.init({ saveAndLeave: function(proceed){ draftSave(proceed); } });
+TomatoNav.init({ current:'minutes-edit.html', title:'管理者ナビゲーション' });
+</script>
+</body>
+</html>

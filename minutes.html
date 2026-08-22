@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>議事録(モック)</title>
+<style>
+  :root{
+    --ink:#232323;
+    --sub:#6f6f6f;
+    --line:#e3e2df;
+    --paper:#ffffff;
+    --floor:#faf9f7;
+    --vine:#4c7a52;
+    --vine-deep:#33583a;
+    --tomato:#c94a3c;
+    --sat:#2f6fb0;
+    --sat-bg:#eaf2fa;
+    --admin:#8a6d1f;
+    --admin-bg:#f6efd9;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;background:#efeee9;
+    font-family:"Hiragino Sans","Yu Gothic UI","BIZ UDPGothic",system-ui,-apple-system,sans-serif;
+    color:var(--ink);-webkit-font-smoothing:antialiased;
+  }
+  .phone{
+    max-width:428px;margin:0 auto;background:var(--paper);
+    min-height:100vh;box-shadow:0 0 40px rgba(0,0,0,0.12);padding-bottom:40px;
+  }
+  .mockbanner{background:#fff5cc;color:#7a5c00;font-size:11px;text-align:center;padding:6px 10px;}
+  .topbar{padding:14px 16px 12px 16px;border-bottom:1px solid var(--line);}
+  .brandrow{display:flex;align-items:baseline;justify-content:space-between;}
+  .brand{font-size:15px;font-weight:700;letter-spacing:.02em;}
+  .brand .dot{
+    display:inline-block;width:7px;height:7px;border-radius:50%;
+    background:var(--tomato);margin-right:6px;vertical-align:middle;
+  }
+  .backlink{font-size:11.5px;color:var(--sub);text-decoration:none;}
+  .titlerow{display:flex;align-items:center;justify-content:space-between;margin-top:8px;gap:8px;}
+  .pagetitle{font-size:13px;font-weight:700;color:var(--vine-deep);}
+  .newbtn{
+    font-family:inherit;font-size:11.5px;font-weight:700;color:#fff;
+    background:var(--vine);border:1px solid var(--vine-deep);border-radius:8px;
+    padding:6px 12px;cursor:pointer;text-decoration:none;white-space:nowrap;
+  }
+
+  section{padding:12px 16px 0 16px;}
+  .searchbox{position:relative;}
+  .searchbox input{
+    width:100%;font-family:inherit;font-size:13.5px;
+    border:1px solid var(--line);border-radius:10px;padding:10px 12px 10px 32px;background:#fff;color:var(--ink);
+  }
+  .searchbox input:focus{outline:2px solid var(--vine);outline-offset:-1px;}
+  .searchbox .ic{position:absolute;left:10px;top:50%;transform:translateY(-50%);font-size:13px;color:var(--sub);}
+
+  .tabs{display:flex;gap:6px;margin-top:10px;overflow-x:auto;}
+  .tabbtn{
+    flex:0 0 auto;font-family:inherit;font-size:12.5px;font-weight:700;color:var(--sub);
+    background:var(--floor);border:1px solid var(--line);border-radius:20px;
+    padding:7px 13px;cursor:pointer;white-space:nowrap;
+  }
+  .tabbtn.active{color:#fff;background:var(--vine-deep);border-color:var(--vine-deep);}
+
+  .daterange{display:flex;align-items:center;gap:8px;margin-top:10px;flex-wrap:wrap;}
+  .daterange input[type=date]{
+    font-family:inherit;font-size:12.5px;border:1px solid var(--line);border-radius:8px;
+    padding:7px 8px;background:#fff;color:var(--ink);
+  }
+  .daterange .tilde{color:var(--sub);font-size:12px;}
+  .daterange .clearbtn{
+    font-family:inherit;font-size:11px;color:var(--sub);background:none;border:none;
+    text-decoration:underline;cursor:pointer;padding:0;
+  }
+
+  .resulthead{margin-top:12px;font-size:11.5px;color:var(--sub);}
+
+  .mcard{
+    display:block;border:1px solid var(--line);border-radius:12px;
+    padding:12px 13px;margin-top:10px;background:#fff;text-decoration:none;color:inherit;
+  }
+  .mcard:active{transform:translateY(1px);}
+  .mhead{display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin-bottom:6px;}
+  .mbadge{font-size:10px;font-weight:700;border-radius:12px;padding:2px 9px;}
+  .mbadge.zentai{color:var(--sat);background:var(--sat-bg);border:1px solid #c3d8ec;}
+  .mbadge.yakuin{color:var(--admin);background:var(--admin-bg);border:1px solid #e6d9ae;}
+  .mdate{font-size:11px;color:var(--sub);}
+  .mattach{font-size:10.5px;color:var(--sub);margin-left:auto;}
+  .mtitle{font-size:14px;font-weight:700;margin-bottom:4px;line-height:1.5;}
+  .mexcerpt{font-size:12px;color:var(--sub);line-height:1.7;}
+
+  .empty{
+    text-align:center;color:var(--sub);font-size:12.5px;
+    padding:32px 16px;line-height:1.8;
+  }
+</style>
+</head>
+<body>
+<div class="phone">
+  <div class="mockbanner">⚠ これは検討用のモック画面です。内容はすべてダミーで、本番の仕様・デザインとは異なります。</div>
+  <div id="roleToggleMount"></div>
+  <div id="adminBand"></div>
+  <div id="generalNav"></div>
+
+  <div class="topbar">
+    <div class="brandrow">
+      <div class="brand"><span class="dot"></span>ミニトマト部会 出荷情報</div>
+      <a class="backlink" href="index.html">← TOPへ戻る</a>
+    </div>
+    <div class="titlerow">
+      <div class="pagetitle">🗒 議事録</div>
+      <a class="newbtn" id="newBtn" href="minutes-edit.html" style="display:none;">＋ 新規投稿</a>
+    </div>
+  </div>
+
+  <section>
+    <div class="searchbox">
+      <span class="ic">🔎</span>
+      <input type="text" id="kwInput" placeholder="タイトル・本文をキーワード検索">
+    </div>
+
+    <div class="tabs" id="tabs"></div>
+
+    <div class="daterange">
+      <input type="date" id="fromDate">
+      <span class="tilde">〜</span>
+      <input type="date" id="toDate">
+      <button class="clearbtn" id="clearDate">条件をクリア</button>
+    </div>
+
+    <div class="resulthead" id="resultHead"></div>
+    <div id="mlist"></div>
+  </section>
+</div>
+
+<script>
+// ---- ダミー議事録データ(minutes-detail.html / minutes-edit.html と共通の想定) ----
+const MINUTES = [
+  { id:1, cat:"zentai", date:"2026-08-10", title:"8月度 定例会議事録", author:"山田", updated:"2026-08-11 10:00",
+    body:"## 議題1: 8月の出荷状況について\n7月後半から出荷量が回復し、東京・神奈川向けを中心に単価も安定してきている。2S・S規格の引き合いが強く、選別への協力を継続してお願いする。\n\n## 議題2: 集出荷場メンテナンスについて\n8/24(月)に空調設備の点検を実施するため、当日は搬入受付を1時間繰り上げて7:00からとする。詳細は掲示物およびお知らせを参照。\n\n## 議題3: 部会総会の日程確認\n8/28(金)19時より公民館にて開催。議案は追って配布する。",
+    attachments:[{name:"集出荷場メンテナンス案内.pdf",type:"pdf"},{name:"8月度議案資料.docx",type:"doc"}] },
+  { id:2, cat:"yakuin", date:"2026-08-05", title:"役員協議会(8月)議事録", author:"佐藤", updated:"2026-08-05 19:10",
+    body:"## 議題1: 単価交渉の進捗\n主要3市場との単価交渉について、現行水準からの改定案を協議した。詳細は非公開資料を参照。\n\n## 議題2: 部会費の見直し\n次年度の部会費について、運営コストの増加を踏まえた見直し案を検討した。継続協議とする。",
+    attachments:[{name:"単価交渉方針(非公開).pdf",type:"pdf"}] },
+  { id:3, cat:"zentai", date:"2026-07-13", title:"7月度 定例会議事録", author:"山田", updated:"2026-07-14 09:30",
+    body:"## 議題1: 7月の出荷実績\n梅雨明け後の高温により、上位規格の比率がやや低下した。来月に向けて選別方法の再確認を行う。\n\n## 議題2: 新規市場開拓について\n北九州市場からの追加引き合いがあり、試験的な出荷を検討する。",
+    attachments:[] },
+  { id:4, cat:"yakuin", date:"2026-07-01", title:"役員協議会(7月)議事録 ─ 単価交渉方針", author:"佐藤", updated:"2026-07-02 08:00",
+    body:"## 議題1: 単価交渉方針\n来期の単価交渉にあたり、各市場の取引実績データをもとに交渉方針を策定した。\n\n## 議題2: 役員体制について\n次期役員候補について意見交換を行った。",
+    attachments:[{name:"交渉方針メモ.docx",type:"doc"}] },
+  { id:5, cat:"zentai", date:"2026-06-08", title:"6月度 定例会議事録", author:"田中", updated:"2026-06-09 11:00",
+    body:"## 議題1: 6月の出荷状況\n梅雨時期の天候不順により出荷量にばらつきが見られた。曜日別の平準化について再度周知する。\n\n## 議題2: 資材の共同購入\n出荷用資材の共同購入について、業者見積りを比較検討した。",
+    attachments:[{name:"資材見積り比較.pdf",type:"pdf"},{name:"6月度議事メモ.docx",type:"doc"}] },
+  { id:6, cat:"zentai", date:"2026-05-11", title:"総会議事録(2026年度)", author:"山田", updated:"2026-05-12 14:20",
+    body:"## 議題1: 前年度事業報告\n前年度の出荷実績・単価動向について報告があった。\n\n## 議題2: 今年度事業計画\n今年度の目標出荷量および品質向上の取り組みについて審議し、承認された。\n\n## 議題3: 役員選任\n新役員を選任した。詳細は別紙名簿を参照。",
+    attachments:[{name:"前年度事業報告書.pdf",type:"pdf"},{name:"今年度事業計画書.pdf",type:"pdf"},{name:"新役員名簿.docx",type:"doc"}] },
+  { id:7, cat:"yakuin", date:"2026-04-03", title:"役員協議会(4月)議事録", author:"佐藤", updated:"2026-04-03 20:00",
+    body:"## 議題1: 部会費の見直し(続き)\n前回に続き、部会費の見直しについて協議した。次回総会にて提案する方向で合意。\n\n## 議題2: 資材共同購入の契約\n資材の共同購入契約について、業者選定を行った。",
+    attachments:[] },
+  { id:8, cat:"zentai", date:"2026-03-09", title:"3月度 定例会議事録", author:"田中", updated:"2026-03-10 09:00",
+    body:"## 議題1: 3月の出荷実績\n年度末に向けて出荷量が増加傾向。市場別の単価動向を共有した。\n\n## 議題2: 次年度の体制について\n次年度の選果体制について意見交換を行った。",
+    attachments:[{name:"3月度出荷実績表.pdf",type:"pdf"}] }
+];
+
+const CATS = {
+  zentai: { label:"全体協議会", cls:"zentai" },
+  yakuin: { label:"役員協議会", cls:"yakuin" }
+};
+
+let currentTab = "all";
+const $ = id => document.getElementById(id);
+
+// ---- 権限フィルタ:役員協議会は管理者以外には一切見せない(検索・絞り込みより先に除外) ----
+function visibleMinutes(){
+  const isAdmin = window.TomatoNav && TomatoNav.isAdmin();
+  return MINUTES.filter(m => isAdmin || m.cat !== "yakuin");
+}
+
+function excerpt(body){
+  const plain = body.replace(/##\s*/g," ").replace(/\n+/g," ").replace(/\s+/g," ").trim();
+  return plain.length > 62 ? plain.slice(0,62) + "…" : plain;
+}
+
+function renderTabs(){
+  const isAdmin = window.TomatoNav && TomatoNav.isAdmin();
+  const tabs = [{v:"all", l:"すべて"}, {v:"zentai", l:"全体協議会"}];
+  if(isAdmin) tabs.push({v:"yakuin", l:"役員協議会"});
+  if(currentTab === "yakuin" && !isAdmin) currentTab = "all";
+  $("tabs").innerHTML = tabs.map(t =>
+    `<button class="tabbtn${currentTab===t.v?' active':''}" data-tab="${t.v}">${t.l}</button>`
+  ).join("");
+  $("tabs").querySelectorAll("[data-tab]").forEach(b=>{
+    b.addEventListener("click", ()=>{ currentTab = b.dataset.tab; renderTabs(); applyFilter(); });
+  });
+}
+
+function applyFilter(){
+  const kw = $("kwInput").value.trim();
+  const from = $("fromDate").value;
+  const to = $("toDate").value;
+  let list = visibleMinutes();
+  if(currentTab !== "all") list = list.filter(m => m.cat === currentTab);
+  if(from) list = list.filter(m => m.date >= from);
+  if(to) list = list.filter(m => m.date <= to);
+  if(kw) list = list.filter(m => (m.title + " " + m.body).includes(kw));
+  list = list.slice().sort((a,b)=> b.date.localeCompare(a.date));
+  renderList(list);
+}
+
+function renderList(list){
+  $("resultHead").textContent = `該当 ${list.length}件`;
+  if(!list.length){
+    $("mlist").innerHTML = '<div class="empty">条件に一致する議事録が見つかりません。<br>キーワードや期間を変えてお試しください。</div>';
+    return;
+  }
+  $("mlist").innerHTML = list.map(m=>{
+    const cat = CATS[m.cat];
+    return `<a class="mcard" href="minutes-detail.html?id=${m.id}">
+      <div class="mhead">
+        <span class="mbadge ${cat.cls}">${cat.label}</span>
+        <span class="mdate">${m.date.replace(/-/g,"/")}</span>
+        ${m.attachments.length ? `<span class="mattach">📎 ${m.attachments.length}件</span>` : ""}
+      </div>
+      <div class="mtitle">${m.title}</div>
+      <div class="mexcerpt">${excerpt(m.body)}</div>
+    </a>`;
+  }).join("");
+}
+
+$("kwInput").addEventListener("input", applyFilter);
+$("fromDate").addEventListener("change", applyFilter);
+$("toDate").addEventListener("change", applyFilter);
+$("clearDate").addEventListener("click", ()=>{
+  $("kwInput").value = "";
+  $("fromDate").value = "";
+  $("toDate").value = "";
+  currentTab = "all";
+  renderTabs();
+  applyFilter();
+});
+
+renderTabs();
+applyFilter();
+</script>
+<script src="assets/nav.js"></script>
+<script>
+TomatoNav.init({ current:'minutes.html', title:'管理者ナビゲーション' });
+if(TomatoNav.isAdmin()) $("newBtn").style.display = "inline-block";
+renderTabs();
+applyFilter();
+</script>
+</body>
+</html>
