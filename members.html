@@ -1,0 +1,626 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>管理画面:部会員名簿(モック)</title>
+<style>
+  :root{
+    --ink:#232323;
+    --sub:#6f6f6f;
+    --line:#e3e2df;
+    --paper:#ffffff;
+    --floor:#faf9f7;
+    --vine:#4c7a52;
+    --vine-deep:#33583a;
+    --tomato:#c94a3c;
+    --tomato-deep:#a63a2f;
+    --sat:#2f6fb0;
+    --warn:#c8862c;
+    --warn-bg:#fbf1e1;
+    --admin:#8a6d1f;
+    --admin-bg:#f6efd9;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;background:#efeee9;
+    font-family:"Hiragino Sans","Yu Gothic UI","BIZ UDPGothic",system-ui,-apple-system,sans-serif;
+    color:var(--ink);-webkit-font-smoothing:antialiased;
+  }
+  .sheet{
+    max-width:640px;margin:0 auto;background:var(--paper);
+    min-height:100vh;box-shadow:0 0 40px rgba(0,0,0,0.12);padding-bottom:40px;
+  }
+  .mockbanner{background:#fff5cc;color:#7a5c00;font-size:11px;text-align:center;padding:6px 10px;}
+  .topbar{padding:14px 16px 12px 16px;border-bottom:1px solid var(--line);}
+  .brandrow{display:flex;align-items:baseline;justify-content:space-between;}
+  .brand{font-size:15px;font-weight:700;letter-spacing:.02em;}
+  .brand .dot{
+    display:inline-block;width:7px;height:7px;border-radius:50%;
+    background:var(--tomato);margin-right:6px;vertical-align:middle;
+  }
+  .backlink{font-size:11.5px;color:var(--sub);text-decoration:none;}
+  .pagetitle{font-size:13px;font-weight:700;color:var(--vine-deep);margin-top:8px;}
+
+  section{padding:14px 16px 0 16px;}
+  h3{font-size:12px;color:var(--sub);font-weight:700;margin:4px 0 8px 0;letter-spacing:.03em;}
+  .lead{font-size:11.5px;color:var(--sub);line-height:1.8;margin-bottom:10px;}
+  .lead b{color:var(--ink);}
+
+  .btn{
+    font-family:inherit;font-size:13px;font-weight:700;color:var(--ink);
+    background:var(--floor);border:1px solid var(--line);border-radius:8px;
+    padding:9px 14px;cursor:pointer;
+  }
+  .btn:active{transform:translateY(1px);}
+  .btn.primary{background:var(--vine);border-color:var(--vine-deep);color:#fff;}
+  .btn.danger{color:var(--tomato-deep);border-color:#e0b7b1;background:#fdf4f3;}
+  .btn.small{font-size:11.5px;padding:5px 11px;}
+
+  /* ---- 集計カード ---- */
+  .metrics{display:flex;gap:10px;margin-bottom:4px;}
+  .metric{
+    flex:1;border:1px solid var(--line);border-radius:12px;background:#fff;
+    padding:11px 13px;
+  }
+  .metric .mlabel{font-size:11px;color:var(--sub);font-weight:700;margin-bottom:4px;}
+  .metric .mvalue{font-size:20px;font-weight:700;color:var(--vine-deep);font-variant-numeric:tabular-nums;}
+
+  /* ---- 検索・絞り込み ---- */
+  .searchbox{position:relative;margin-top:12px;}
+  .searchbox input{
+    width:100%;font-family:inherit;font-size:13.5px;
+    border:1px solid var(--line);border-radius:10px;padding:10px 12px 10px 32px;background:#fff;color:var(--ink);
+  }
+  .searchbox input:focus{outline:2px solid var(--vine);outline-offset:-1px;}
+  .searchbox .ic{position:absolute;left:10px;top:50%;transform:translateY(-50%);font-size:13px;color:var(--sub);}
+
+  .toprow{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:10px;flex-wrap:wrap;}
+  .tabs{display:flex;gap:6px;overflow-x:auto;flex:1;}
+  .tabbtn{
+    flex:0 0 auto;font-family:inherit;font-size:12.5px;font-weight:700;color:var(--sub);
+    background:var(--floor);border:1px solid var(--line);border-radius:20px;
+    padding:7px 13px;cursor:pointer;white-space:nowrap;
+  }
+  .tabbtn.active{color:#fff;background:var(--vine-deep);border-color:var(--vine-deep);}
+  .addlink{
+    font-family:inherit;font-size:11.5px;font-weight:700;color:#fff;
+    background:var(--vine);border:1px solid var(--vine-deep);border-radius:8px;
+    padding:7px 13px;cursor:pointer;white-space:nowrap;
+  }
+
+  .resulthead{margin-top:10px;font-size:11.5px;color:var(--sub);}
+
+  /* ---- 名簿カード ---- */
+  .mem{
+    border:1px solid var(--line);border-radius:10px;
+    padding:10px 12px;margin-top:8px;background:#fff;
+  }
+  .mem.off{background:var(--floor);border-style:dashed;}
+  .mem.off .mname{color:var(--sub);}
+  .mtop{display:flex;align-items:center;gap:7px;flex-wrap:wrap;}
+  .mname{font-size:14px;font-weight:700;margin-right:auto;}
+  .rolebadge{font-size:10px;font-weight:700;border-radius:12px;padding:2px 9px;white-space:nowrap;}
+  .rolebadge.admin{color:var(--admin);background:var(--admin-bg);border:1px solid #e6d9ae;}
+  .rolebadge.general{color:#5a5a5a;background:#efeeea;border:1px solid #ddd9d2;}
+  .linkbadge{font-size:10px;font-weight:700;border-radius:12px;padding:2px 9px;white-space:nowrap;}
+  .linkbadge.linked{color:var(--vine-deep);background:#eef4ee;border:1px solid #cfe1d1;}
+  .linkbadge.unlinked{color:var(--warn);background:var(--warn-bg);border:1px solid #ecd7ae;}
+  .mbottom{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:7px;}
+  .mlogin{font-size:10.5px;color:var(--sub);}
+  .offnote{font-size:10.5px;color:var(--sub);}
+  .iconbtn{
+    font-family:inherit;font-size:14px;background:var(--floor);border:1px solid var(--line);
+    border-radius:8px;padding:4px 9px;cursor:pointer;line-height:1.4;
+  }
+
+  .empty{text-align:center;color:var(--sub);font-size:12.5px;padding:32px 16px;line-height:1.8;}
+
+  /* ---- 追加フォーム ---- */
+  .addcard{
+    border:1px solid var(--line);border-radius:12px;padding:12px;margin-top:4px;
+    display:flex;gap:8px;align-items:center;flex-wrap:wrap;
+  }
+  .addcard input{
+    font-family:inherit;font-size:13.5px;flex:2;min-width:150px;
+    border:1px solid var(--line);border-radius:8px;padding:9px 10px;background:#fff;
+  }
+  .addcard select{
+    font-family:inherit;font-size:13px;font-weight:700;color:var(--ink);
+    background:var(--floor);border:1px solid var(--line);border-radius:8px;padding:9px 10px;
+  }
+  .addcard input:focus, .addcard select:focus{outline:2px solid var(--vine);outline-offset:-1px;}
+
+  /* ---- 変更履歴 ---- */
+  .logitem{
+    display:flex;gap:10px;align-items:flex-start;
+    border-bottom:1px solid var(--line);padding:8px 2px;font-size:12px;line-height:1.6;
+  }
+  .logitem:last-child{border-bottom:none;}
+  .logtime{font-size:10.5px;color:var(--sub);white-space:nowrap;min-width:78px;}
+  .logbody b{font-weight:700;}
+  .logwho{font-size:10.5px;color:var(--sub);}
+
+  /* ---- モーダル ---- */
+  .modalbg{
+    display:none;position:fixed;inset:0;z-index:60;background:rgba(30,30,28,.45);
+    align-items:center;justify-content:center;padding:20px;
+  }
+  .modalbg.show{display:flex;}
+  .modal{
+    background:#fff;border-radius:14px;max-width:400px;width:100%;
+    padding:20px 20px 16px 20px;box-shadow:0 12px 40px rgba(0,0,0,.25);
+  }
+  .modal .mtitle{font-size:14.5px;font-weight:700;margin-bottom:10px;}
+  .modal .mbody{font-size:13px;line-height:1.8;}
+  .modal .fld{display:block;font-size:11.5px;color:var(--sub);font-weight:700;margin-top:12px;margin-bottom:4px;}
+  .modal input[type=text], .modal select{
+    width:100%;font-family:inherit;font-size:13.5px;font-weight:400;color:var(--ink);
+    border:1px solid var(--line);border-radius:8px;padding:9px 10px;background:var(--floor);
+  }
+  .modal select{font-weight:700;}
+  .modal input:focus, .modal select:focus{outline:2px solid var(--vine);outline-offset:-1px;}
+  .modal .linkrow{
+    display:flex;align-items:center;gap:8px;margin-top:12px;
+    border:1px solid var(--line);border-radius:8px;padding:8px 10px;background:var(--floor);
+  }
+  .modal .linkrow .lstat{font-size:12px;font-weight:700;flex:1;}
+  .modal .errbox{
+    display:none;margin-top:12px;font-size:11.5px;color:var(--tomato-deep);
+    background:#fdf4f3;border:1px solid #e0b7b1;border-radius:8px;padding:8px 10px;line-height:1.6;
+  }
+  .modal .errbox.show{display:block;}
+  .modal .keeplist{
+    background:var(--floor);border:1px solid var(--line);border-radius:8px;
+    padding:9px 11px;font-size:12px;line-height:1.8;margin:9px 0;
+  }
+  .modal .keeplist .ok{color:var(--vine-deep);}
+  .modal .keeplist .hide{color:var(--sub);}
+  .modal .mnote{font-size:11px;color:var(--sub);margin-top:6px;line-height:1.7;}
+  .modal .mbtns{display:flex;gap:10px;justify-content:flex-end;margin-top:14px;}
+  .modal .mbtns .btn.ghost{margin-right:auto;}
+
+  .footnote{
+    margin:16px 16px 0 16px;font-size:10.5px;color:var(--sub);line-height:1.8;
+    background:var(--floor);border:1px solid var(--line);border-radius:10px;padding:9px 11px;
+  }
+
+  .toast{
+    position:fixed;left:50%;bottom:24px;transform:translateX(-50%);
+    background:var(--ink);color:#fff;font-size:12px;border-radius:20px;
+    padding:9px 16px;opacity:0;transition:opacity .25s;pointer-events:none;
+    max-width:90%;text-align:center;z-index:80;line-height:1.6;
+  }
+  .toast.show{opacity:.94;}
+</style>
+</head>
+<body>
+<div class="sheet">
+  <div class="mockbanner">⚠ これは検討用のモック画面です。内容はすべてダミーで、本番の仕様・デザインとは異なります。</div>
+  <div id="roleToggleMount"></div>
+  <div id="adminBand"></div>
+  <div id="generalNav"></div>
+
+  <div class="topbar">
+    <div class="brandrow">
+      <div class="brand"><span class="dot"></span>ミニトマト部会 出荷情報</div>
+      <a class="backlink" href="index.html">← TOPへ戻る</a>
+    </div>
+    <div class="pagetitle">👥 部会員名簿</div>
+  </div>
+
+  <section>
+    <div class="lead">
+      部会員の氏名・権限・LINE連携状況を管理できます。<br>
+      氏名はこの名簿の値が正となり、部会員がLINEログインする際は<b>この一覧から自分を選んで</b>初回連携します。
+    </div>
+
+    <div class="metrics">
+      <div class="metric">
+        <div class="mlabel">LINE連携済み</div>
+        <div class="mvalue" id="metricLinked">—</div>
+      </div>
+      <div class="metric">
+        <div class="mlabel">管理者</div>
+        <div class="mvalue" id="metricAdmin">—</div>
+      </div>
+    </div>
+
+    <div class="searchbox">
+      <span class="ic">🔎</span>
+      <input type="text" id="kwInput" placeholder="氏名で検索">
+    </div>
+
+    <div class="toprow">
+      <div class="tabs" id="tabs"></div>
+      <button class="addlink" id="showAddBtn">＋ 追加</button>
+    </div>
+
+    <div class="resulthead" id="resultHead"></div>
+    <div id="memList"></div>
+
+    <div id="addArea" style="display:none;">
+      <h3 style="margin-top:14px;">部会員を追加</h3>
+      <div class="addcard">
+        <input id="newName" placeholder="氏名(例:中村 花子)" maxlength="30">
+        <select id="newRole">
+          <option value="general">閲覧</option>
+          <option value="admin">管理者</option>
+        </select>
+        <button class="btn primary" id="addBtn">追加する</button>
+      </div>
+      <div class="lead" style="margin-top:6px;">
+        追加した部会員は「LINE未連携」の状態で登録されます。本人が初回ログイン時にこの名簿から自分の氏名を選ぶと連携済みになります。
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h3>名簿の変更履歴</h3>
+    <div class="lead" style="margin-bottom:4px;">
+      追加・氏名修正・権限変更・一覧から外す操作・LINE連携解除はすべて記録されます。
+    </div>
+    <div id="logList"></div>
+  </section>
+
+  <div class="footnote">
+    氏名はこの名簿の値が正となり、LINEの表示名は使用されません。部会員を一覧から外しても過去の記録は保持されます。
+  </div>
+</div>
+
+<!-- 編集モーダル -->
+<div class="modalbg" id="editBg">
+  <div class="modal">
+    <div class="mtitle">部会員情報を編集</div>
+    <label class="fld">氏名</label>
+    <input type="text" id="editName" maxlength="30">
+    <label class="fld">権限</label>
+    <select id="editRole">
+      <option value="general">閲覧</option>
+      <option value="admin">管理者</option>
+    </select>
+    <div class="linkrow">
+      <span class="lstat" id="editLinkStat"></span>
+      <button class="btn small" id="editUnlinkBtn">連携を解除</button>
+    </div>
+    <div class="errbox" id="editErr"></div>
+    <div class="mbtns">
+      <button class="btn danger ghost" id="editRemoveBtn">一覧から外す</button>
+      <button class="btn" id="editCancelBtn">キャンセル</button>
+      <button class="btn primary" id="editSaveBtn">保存する</button>
+    </div>
+  </div>
+</div>
+
+<!-- 一覧から外す確認 -->
+<div class="modalbg" id="removeBg">
+  <div class="modal">
+    <div class="mtitle" id="removeTitle">この部会員を一覧から外しますか?</div>
+    <div class="mbody">今後のログイン対象から外しますが、<b>過去の記録はそのまま残ります</b>。</div>
+    <div class="keeplist">
+      <div class="ok">✅ 残るもの:氏名・権限変更などの過去の履歴</div>
+      <div class="hide">➖ できなくなること:ログイン、名簿からの選択</div>
+    </div>
+    <div class="mnote">取引再開・復帰時は「一覧に戻す」でいつでも元に戻せます。この操作は記録されます。</div>
+    <div class="mbtns">
+      <button class="btn" id="removeCancel">やめる</button>
+      <button class="btn danger" id="removeOk">一覧から外す</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const $ = id => document.getElementById(id);
+
+// ---- ダミー名簿データ(40名。3名を管理者、6名を未連携とする) ----
+const SEI = ["山田","佐藤","鈴木","田中","高橋","伊藤","渡辺","中村","小林","加藤",
+             "吉田","山本","松本","井上","木村","林","清水","斎藤","森","池田"];
+const MEI = ["一郎","次郎","三郎","花子","恵子","太郎","誠","健一","由美","直樹"];
+const ADMIN_IDS = [1, 11, 21];      // 山田 一郎 / 佐藤 一郎 / 鈴木 一郎
+const UNLINKED_IDS = [6, 15, 24, 29, 34, 40];
+
+function fakeLastLogin(id){
+  const day = 22 - (id % 10);
+  const h = 6 + (id % 13);
+  const m = (id * 11) % 60;
+  return `2026/08/${String(Math.max(1, day)).padStart(2,"0")} ${String(h).padStart(2,"0")}:${String(m).padStart(2,"0")}`;
+}
+
+let members = [];
+(function seedMembers(){
+  let id = 1;
+  for(let s=0; s<SEI.length && id<=40; s++){
+    for(let m=0; m<MEI.length && id<=40; m++){
+      const linked = !UNLINKED_IDS.includes(id);
+      members.push({
+        id,
+        name: SEI[s] + " " + MEI[m],
+        role: ADMIN_IDS.includes(id) ? "admin" : "general",
+        lineLinked: linked,
+        lastLogin: linked ? fakeLastLogin(id) : null,
+        active: true
+      });
+      id++;
+    }
+  }
+})();
+let nextId = 41;
+
+let logs = [
+  { t:"2026/08/01 10:00", body:"初期設定として40名を登録しました", who:"山田" },
+];
+
+let currentTab = "all";
+let editingMemberId = null;
+let removeTargetId = null;
+let leaveProceed = null;
+
+const toast = $("toast");
+let toastTimer;
+function showToast(msg){
+  toast.innerHTML = msg;
+  toast.classList.add("show");
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(()=>toast.classList.remove("show"), 3400);
+}
+function now(){
+  const d = new Date();
+  const p = n => String(n).padStart(2,"0");
+  return `${d.getFullYear()}/${p(d.getMonth()+1)}/${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
+}
+function addLog(body){
+  logs.unshift({ t: now(), body, who:"山田" });
+  renderLogs();
+}
+function roleLabel(r){ return r === "admin" ? "管理者" : "閲覧"; }
+function escapeHtml(s){
+  return String(s).replace(/[&<>"']/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
+}
+
+// ---- 管理者2名以上の担保 ----
+function wouldLeaveLessThanTwoAdmins(memberId, changes){
+  const projected = members.map(m => m.id === memberId ? Object.assign({}, m, changes) : m);
+  return projected.filter(m => m.active && m.role === "admin").length < 2;
+}
+
+// ---- 集計 ----
+function renderMetrics(){
+  const activeMembers = members.filter(m=>m.active);
+  const linked = activeMembers.filter(m=>m.lineLinked).length;
+  const admins = activeMembers.filter(m=>m.role==="admin").length;
+  $("metricLinked").textContent = `${linked}/${activeMembers.length}人`;
+  $("metricAdmin").textContent = `${admins}人`;
+}
+
+// ---- タブ ----
+function renderTabs(){
+  const tabs = [
+    { v:"all",      l:"すべて" },
+    { v:"unlinked", l:"未連携" },
+    { v:"admin",    l:"管理者" }
+  ];
+  $("tabs").innerHTML = tabs.map(t =>
+    `<button class="tabbtn${currentTab===t.v?' active':''}" data-tab="${t.v}">${t.l}</button>`
+  ).join("");
+  $("tabs").querySelectorAll("[data-tab]").forEach(b=>{
+    b.addEventListener("click", ()=>{ currentTab = b.dataset.tab; renderTabs(); applyFilter(); });
+  });
+}
+
+// ---- 絞り込み・一覧描画 ----
+function applyFilter(){
+  const kw = $("kwInput").value.trim();
+  let list = members.slice();
+  if(currentTab === "unlinked") list = list.filter(m => !m.lineLinked && m.active);
+  if(currentTab === "admin") list = list.filter(m => m.role === "admin" && m.active);
+  if(kw) list = list.filter(m => m.name.includes(kw));
+  // 有効な部会員を先に、一覧から外した部会員は末尾にまとめる
+  list = list.slice().sort((a,b) => (a.active===b.active) ? a.id-b.id : (a.active?-1:1));
+  renderList(list);
+}
+
+function renderList(list){
+  $("resultHead").textContent = `該当 ${list.length}件`;
+  if(!list.length){
+    $("memList").innerHTML = '<div class="empty">条件に一致する部会員が見つかりません。<br>キーワードや絞り込みを変えてお試しください。</div>';
+    return;
+  }
+  $("memList").innerHTML = list.map(m=>{
+    const roleBadge = `<span class="rolebadge ${m.role}">${roleLabel(m.role)}</span>`;
+    const linkBadge = m.lineLinked
+      ? `<span class="linkbadge linked">✅ LINE連携済</span>`
+      : `<span class="linkbadge unlinked">⚠ LINE未連携</span>`;
+    if(!m.active){
+      return `<div class="mem off">
+        <div class="mtop">
+          <span class="mname">${escapeHtml(m.name)}</span>
+          ${roleBadge}
+          <span class="linkbadge unlinked">一覧から除外</span>
+        </div>
+        <div class="mbottom">
+          <span class="offnote">過去の記録は保持されています</span>
+          <button class="btn small" data-restore="${m.id}">一覧に戻す</button>
+        </div>
+      </div>`;
+    }
+    return `<div class="mem">
+      <div class="mtop">
+        <span class="mname">${escapeHtml(m.name)}</span>
+        ${roleBadge}
+        ${linkBadge}
+      </div>
+      <div class="mbottom">
+        <span class="mlogin">最終ログイン:${m.lastLogin || "—"}</span>
+        <button class="iconbtn" data-edit="${m.id}" aria-label="編集">✏️</button>
+      </div>
+    </div>`;
+  }).join("");
+
+  document.querySelectorAll("[data-edit]").forEach(b=>b.addEventListener("click",()=>openEdit(+b.dataset.edit)));
+  document.querySelectorAll("[data-restore]").forEach(b=>b.addEventListener("click",()=>restoreMember(+b.dataset.restore)));
+}
+
+function renderAll(){
+  renderMetrics();
+  applyFilter();
+}
+
+// ---- 編集モーダル ----
+function refreshEditModal(m){
+  $("editName").value = m.name;
+  $("editRole").value = m.role;
+  $("editLinkStat").textContent = m.lineLinked ? "✅ LINE連携済み" : "⚠ LINE未連携";
+  $("editUnlinkBtn").style.display = m.lineLinked ? "inline-block" : "none";
+  $("editErr").classList.remove("show");
+  $("editErr").textContent = "";
+}
+function openEdit(id){
+  editingMemberId = id;
+  const m = members.find(x=>x.id===id);
+  refreshEditModal(m);
+  $("editBg").classList.add("show");
+}
+function closeEdit(){
+  editingMemberId = null;
+  $("editBg").classList.remove("show");
+  if(window.UnsavedGuard) UnsavedGuard.markClean();
+}
+function showEditErr(msg){
+  $("editErr").textContent = "⚠ " + msg;
+  $("editErr").classList.add("show");
+}
+
+$("editName").addEventListener("input", ()=>{ if(window.UnsavedGuard) UnsavedGuard.markDirty(); });
+$("editRole").addEventListener("change", ()=>{ if(window.UnsavedGuard) UnsavedGuard.markDirty(); });
+
+$("editCancelBtn").addEventListener("click", closeEdit);
+
+$("editSaveBtn").addEventListener("click", ()=>{
+  const m = members.find(x=>x.id===editingMemberId);
+  if(!m) return;
+  const newName = $("editName").value.trim();
+  const newRole = $("editRole").value;
+  if(!newName){ showEditErr("氏名を入力してください"); return; }
+  if(newRole !== m.role && wouldLeaveLessThanTwoAdmins(m.id, { role:newRole })){
+    showEditErr("管理者は2名以上必要です。先に他の部会員を管理者にしてから変更してください。");
+    return;
+  }
+  const oldName = m.name, oldRole = m.role;
+  m.name = newName;
+  m.role = newRole;
+  closeEdit();
+  renderAll();
+  if(oldName !== newName) addLog(`<b>${escapeHtml(oldName)}</b>の氏名を<b>${escapeHtml(newName)}</b>に修正しました`);
+  if(oldRole !== newRole) addLog(`<b>${escapeHtml(newName)}</b>の権限を${roleLabel(oldRole)}→${roleLabel(newRole)}に変更しました`);
+  showToast("保存しました");
+  if(leaveProceed){ const p = leaveProceed; leaveProceed = null; p(); }
+});
+
+$("editUnlinkBtn").addEventListener("click", ()=>{
+  const m = members.find(x=>x.id===editingMemberId);
+  if(!m || !m.lineLinked) return;
+  m.lineLinked = false;
+  m.lastLogin = null;
+  refreshEditModal(m);
+  renderAll();
+  addLog(`<b>${escapeHtml(m.name)}</b>のLINE連携を解除しました`);
+  showToast("LINE連携を解除しました。次回ログイン時に名簿から再度選択できます");
+});
+
+$("editRemoveBtn").addEventListener("click", ()=>{
+  const m = members.find(x=>x.id===editingMemberId);
+  if(!m) return;
+  if(wouldLeaveLessThanTwoAdmins(m.id, { active:false })){
+    showEditErr("管理者は2名以上必要です。一覧から外せません。");
+    return;
+  }
+  removeTargetId = m.id;
+  $("removeTitle").textContent = `「${m.name}」を一覧から外しますか?`;
+  $("removeBg").classList.add("show");
+});
+$("removeCancel").addEventListener("click", ()=>{ removeTargetId = null; $("removeBg").classList.remove("show"); });
+$("removeOk").addEventListener("click", ()=>{
+  const m = members.find(x=>x.id===removeTargetId);
+  if(!m) return;
+  m.active = false;
+  $("removeBg").classList.remove("show");
+  removeTargetId = null;
+  closeEdit();
+  renderAll();
+  addLog(`<b>${escapeHtml(m.name)}</b>を一覧から外しました(過去の記録は保持)`);
+  showToast(`「${m.name}」を一覧から外しました。過去の記録は引き続き確認できます`);
+});
+
+function restoreMember(id){
+  const m = members.find(x=>x.id===id);
+  if(!m) return;
+  m.active = true;
+  renderAll();
+  addLog(`<b>${escapeHtml(m.name)}</b>を一覧に戻しました`);
+  showToast(`「${m.name}」を一覧に戻しました`);
+}
+
+// ---- 追加 ----
+$("showAddBtn").addEventListener("click", ()=>{
+  const area = $("addArea");
+  const opening = area.style.display === "none";
+  area.style.display = opening ? "block" : "none";
+  if(opening) $("newName").focus();
+});
+$("addBtn").addEventListener("click", ()=>{
+  const name = $("newName").value.trim();
+  if(!name){ showToast("氏名を入力してください"); return; }
+  if(members.some(m=>m.name===name && m.active)){
+    showToast(`「${name}」はすでに登録されています`);
+    return;
+  }
+  const role = $("newRole").value;
+  members.push({ id: nextId++, name, role, lineLinked:false, lastLogin:null, active:true });
+  $("newName").value = "";
+  $("newRole").value = "general";
+  renderAll();
+  addLog(`<b>${escapeHtml(name)}</b>を追加しました(LINE未連携)`);
+  showToast(`「${name}」を追加しました。初回ログイン時にこの名簿から選択すると連携済みになります`);
+  if(window.UnsavedGuard) UnsavedGuard.markClean();
+  if(leaveProceed){ const p = leaveProceed; leaveProceed = null; p(); }
+});
+$("newName").addEventListener("input", ()=>{ if(window.UnsavedGuard) UnsavedGuard.markDirty(); });
+
+// ---- 検索 ----
+$("kwInput").addEventListener("input", applyFilter);
+
+// ---- 変更履歴 ----
+function renderLogs(){
+  $("logList").innerHTML = logs.map(l=>`
+    <div class="logitem">
+      <span class="logtime">${l.t}</span>
+      <span class="logbody">${l.body}<span class="logwho"> ／ ${l.who}</span></span>
+    </div>`).join("");
+}
+
+renderTabs();
+renderAll();
+renderLogs();
+</script>
+<script src="assets/unsaved-guard.js"></script>
+<script src="assets/nav.js"></script>
+<script>
+UnsavedGuard.init({
+  saveAndLeave: function(proceed){
+    if(editingMemberId !== null){
+      leaveProceed = proceed;
+      $("editSaveBtn").click();
+      return;
+    }
+    const name = $("newName").value.trim();
+    if(!name){ UnsavedGuard.markClean(); proceed(); return; }
+    leaveProceed = proceed;
+    $("addBtn").click();
+  }
+});
+TomatoNav.init({ current:'members.html', title:'管理モード ─ 部会員名簿' });
+</script>
+</body>
+</html>

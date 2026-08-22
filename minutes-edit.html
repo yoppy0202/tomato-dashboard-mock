@@ -139,10 +139,11 @@
 
     <h3>添付ファイル(任意・複数可)</h3>
     <div class="uploadbox">
-      <input type="file" id="fileInput" accept=".pdf,.doc,.docx" multiple>
+      <input type="file" id="fileInput" accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.jpg,.jpeg,.png,.heic" multiple>
       <div class="filelist" id="fileList"></div>
+      <div class="hint" id="compressHint" style="display:none;margin:8px 0 0 0;">🖼 画像はアップロード時にサーバー側で自動圧縮されます(HEICはJPEGに変換されます)。</div>
     </div>
-    <div class="hint">PDF・Wordファイルを添付できます(モックのため実際のアップロードは行われません)。</div>
+    <div class="hint">PDF / Word / Excel / PowerPoint / 画像(JPEG・PNG・HEIC)を添付できます。1ファイル20MBまで、最大10ファイル(モックのため実際のアップロードは行われません)。</div>
 
     <div class="formfoot">
       <button class="btn" id="draftBtn">下書き保存</button>
@@ -173,8 +174,17 @@ const editId = getId();
 const editing = editId ? MinutesStore.byId(editId) : null;
 let attachments = editing ? editing.attachments.slice() : [];
 
-function fileIcon(type){ return type === "pdf" ? "📕" : "📄"; }
-function guessType(name){ return /\.pdf$/i.test(name) ? "pdf" : "doc"; }
+const MAX_FILES = 10;
+const MAX_FILE_MB = 20;
+const FILE_ICONS = { pdf:"📕", doc:"📄", xls:"📊", ppt:"📙", image:"🖼" };
+function fileIcon(type){ return FILE_ICONS[type] || "📄"; }
+function guessType(name){
+  if(/\.pdf$/i.test(name)) return "pdf";
+  if(/\.xlsx?$/i.test(name)) return "xls";
+  if(/\.pptx?$/i.test(name)) return "ppt";
+  if(/\.(jpe?g|png|heic)$/i.test(name)) return "image";
+  return "doc";
+}
 
 function renderFileList(){
   $("fileList").innerHTML = attachments.length
@@ -191,6 +201,7 @@ function renderFileList(){
       markDirty();
     });
   });
+  $("compressHint").style.display = attachments.some(a=>a.type==="image") ? "block" : "none";
 }
 
 function markDirty(){ if(window.UnsavedGuard) UnsavedGuard.markDirty(); }
@@ -255,12 +266,22 @@ $("submitBtn").addEventListener("click", ()=>{
 });
 
 $("fileInput").addEventListener("change", (e)=>{
-  Array.from(e.target.files).forEach(f=>{
+  const picked = Array.from(e.target.files);
+  const oversized = picked.filter(f => f.size > MAX_FILE_MB * 1024 * 1024);
+  const accepted = picked.filter(f => f.size <= MAX_FILE_MB * 1024 * 1024);
+  const room = Math.max(0, MAX_FILES - attachments.length);
+  const toAdd = accepted.slice(0, room);
+  toAdd.forEach(f=>{
     attachments.push({ name:f.name, type:guessType(f.name) });
   });
   e.target.value = "";
   renderFileList();
   markDirty();
+  if(oversized.length){
+    showToast(`⚠ 20MBを超えるファイルは添付できません(${oversized.length}件をスキップ)`);
+  }else if(accepted.length > toAdd.length){
+    showToast(`⚠ 添付は最大${MAX_FILES}ファイルまでです`);
+  }
 });
 
 ["catSel","dateInput","titleInput","bodyInput"].forEach(id=>{

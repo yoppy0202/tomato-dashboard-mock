@@ -13,7 +13,8 @@
     { href:"list.html",     label:"データ一覧" },
     { href:"announce.html", label:"お知らせ投稿" },
     { href:"markets.html",  label:"市場の管理" },
-    { href:"minutes.html",  label:"議事録" }
+    { href:"minutes.html",  label:"議事録" },
+    { href:"members.html",  label:"部会員名簿" }
   ];
   var NAV_GENERAL = [
     { href:"index.html",   label:"ダッシュボード" },
