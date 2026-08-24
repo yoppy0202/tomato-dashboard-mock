@@ -20,6 +20,7 @@
     - お知らせ投稿：`announce.html` → https://yoppy0202.github.io/tomato-dashboard-mock/announce.html
     - 市場の管理：`markets.html` → https://yoppy0202.github.io/tomato-dashboard-mock/markets.html
   - 提案メモ(Word、4ページ版・部会内共有用)
+- **正規版**：`mirubai/mirubai-platform`(private)で開発。サービス名(仮称)「みるばい」。設計文書は正規版リポジトリの docs/ 配下を参照
 
 ---
 
