@@ -309,15 +309,54 @@
   </div>
 </div>
 
+<!-- LINE紐付け解除の確認 -->
+<div class="modalbg" id="unlinkBg">
+  <div class="modal">
+    <div class="mtitle" id="unlinkTitle">LINE紐付けを解除しますか?</div>
+    <div class="mbody" id="unlinkBody"></div>
+    <div class="mbtns">
+      <button class="btn" id="unlinkCancel">キャンセル</button>
+      <button class="btn danger" id="unlinkOk">解除する</button>
+    </div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script src="assets/members-data.js"></script>
 <script>
 const $ = id => document.getElementById(id);
 
+// ---- LINE紐付け状態(login.html / link.html と共有するlocalStorage) ----
+const LINKED_IDS_KEY = 'tomato_mock_linked_ids';
+function getLinkedIds(){
+  try{
+    const raw = localStorage.getItem(LINKED_IDS_KEY);
+    if(raw) return JSON.parse(raw);
+  }catch(e){}
+  const initial = MembersData.MEMBERS.filter(m=>m.lineLinked).map(m=>m.id);
+  try{ localStorage.setItem(LINKED_IDS_KEY, JSON.stringify(initial)); }catch(e){}
+  return initial;
+}
+function saveLinkedIds(ids){
+  try{ localStorage.setItem(LINKED_IDS_KEY, JSON.stringify(ids)); }catch(e){}
+}
+function isAdminView(){
+  try{ return localStorage.getItem('tomato_mock_role') !== 'general'; }catch(e){ return true; }
+}
+
 // ---- 名簿データ(assets/members-data.js が正本。announce.htmlと同じ40名を共有) ----
 let members = MembersData.MEMBERS.map(m => Object.assign({}, m));
 let nextId = MembersData.NEXT_ID;
+
+// link.html での登録・members.html での解除の結果をlocalStorageから反映
+(function syncLinkedFromStorage(){
+  const linkedIds = getLinkedIds();
+  members.forEach(m=>{
+    m.lineLinked = linkedIds.indexOf(m.id) !== -1;
+    if(!m.lineLinked) m.lastLogin = null;
+  });
+})();
 
 let logs = [
   { t:"2026/08/01 10:00", body:"初期設定として40名を登録しました", who:"佐藤" },
@@ -398,6 +437,7 @@ function renderList(list){
     $("memList").innerHTML = '<div class="empty">条件に一致する部会員が見つかりません。<br>キーワードや絞り込みを変えてお試しください。</div>';
     return;
   }
+  const adminView = isAdminView();
   $("memList").innerHTML = list.map(m=>{
     const roleBadge = `<span class="rolebadge ${m.role}">${roleLabel(m.role)}</span>`;
     const linkBadge = m.lineLinked
@@ -416,6 +456,8 @@ function renderList(list){
         </div>
       </div>`;
     }
+    const unlinkBtn = (adminView && m.lineLinked)
+      ? `<button class="btn small danger" data-unlink="${m.id}">紐付け解除</button>` : '';
     return `<div class="mem">
       <div class="mtop">
         <span class="mname">${escapeHtml(m.name)}</span>
@@ -424,13 +466,17 @@ function renderList(list){
       </div>
       <div class="mbottom">
         <span class="mlogin">最終ログイン:${m.lastLogin || "—"}</span>
-        <button class="iconbtn" data-edit="${m.id}" aria-label="編集">✏️</button>
+        <div style="display:flex;gap:6px;align-items:center;">
+          ${unlinkBtn}
+          <button class="iconbtn" data-edit="${m.id}" aria-label="編集">✏️</button>
+        </div>
       </div>
     </div>`;
   }).join("");
 
   document.querySelectorAll("[data-edit]").forEach(b=>b.addEventListener("click",()=>openEdit(+b.dataset.edit)));
   document.querySelectorAll("[data-restore]").forEach(b=>b.addEventListener("click",()=>restoreMember(+b.dataset.restore)));
+  document.querySelectorAll("[data-unlink]").forEach(b=>b.addEventListener("click",()=>openUnlink(+b.dataset.unlink)));
 }
 
 function renderAll(){
@@ -494,6 +540,7 @@ $("editUnlinkBtn").addEventListener("click", ()=>{
   if(!m || !m.lineLinked) return;
   m.lineLinked = false;
   m.lastLogin = null;
+  saveLinkedIds(getLinkedIds().filter(id=>id!==m.id));
   refreshEditModal(m);
   renderAll();
   addLog(`<b>${escapeHtml(m.name)}</b>のLINE連携を解除しました`);
@@ -532,6 +579,33 @@ function restoreMember(id){
   addLog(`<b>${escapeHtml(m.name)}</b>を一覧に戻しました`);
   showToast(`「${m.name}」を一覧に戻しました`);
 }
+
+// ---- LINE紐付け解除 ----
+let unlinkTargetId = null;
+function openUnlink(id){
+  const m = members.find(x=>x.id===id);
+  if(!m || !m.lineLinked) return;
+  unlinkTargetId = id;
+  $("unlinkTitle").textContent = `${m.name}さんのLINE紐付けを解除します`;
+  $("unlinkBody").innerHTML = `本人は次回アクセス時に再度名前の選択が必要になります。よろしいですか?<br><span style="font-size:10.5px;color:var(--sub);">この操作は監査ログに記録されます。</span>`;
+  $("unlinkBg").classList.add("show");
+}
+$("unlinkCancel").addEventListener("click", ()=>{
+  unlinkTargetId = null;
+  $("unlinkBg").classList.remove("show");
+});
+$("unlinkOk").addEventListener("click", ()=>{
+  const m = members.find(x=>x.id===unlinkTargetId);
+  if(!m) return;
+  m.lineLinked = false;
+  m.lastLogin = null;
+  saveLinkedIds(getLinkedIds().filter(id=>id!==m.id));
+  $("unlinkBg").classList.remove("show");
+  unlinkTargetId = null;
+  renderAll();
+  addLog(`<b>${escapeHtml(m.name)}</b>のLINE紐付けを解除しました`);
+  showToast(`「${m.name}」のLINE紐付けを解除しました。次回アクセス時に名簿から再度選択できます`);
+});
 
 // ---- 追加 ----
 $("showAddBtn").addEventListener("click", ()=>{

@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LINE紐付け(モック)</title>
+<style>
+  :root{
+    --ink:#232323;
+    --sub:#6f6f6f;
+    --line:#e3e2df;
+    --paper:#ffffff;
+    --floor:#faf9f7;
+    --vine:#4c7a52;
+    --vine-deep:#33583a;
+    --tomato:#c94a3c;
+    --tomato-deep:#a63a2f;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;background:#efeee9;
+    font-family:"Hiragino Sans","Yu Gothic UI","BIZ UDPGothic",system-ui,-apple-system,sans-serif;
+    color:var(--ink);-webkit-font-smoothing:antialiased;
+  }
+  .phone{
+    max-width:428px;margin:0 auto;background:var(--paper);
+    min-height:100vh;box-shadow:0 0 40px rgba(0,0,0,0.12);
+    display:flex;flex-direction:column;
+  }
+  .mockbanner{background:#fff5cc;color:#7a5c00;font-size:11px;text-align:center;padding:6px 10px;}
+
+  .topbar{padding:14px 16px 10px 16px;border-bottom:1px solid var(--line);}
+  .brand{font-size:15px;font-weight:700;letter-spacing:.02em;}
+  .brand .dot{
+    display:inline-block;width:7px;height:7px;border-radius:50%;
+    background:var(--tomato);margin-right:6px;vertical-align:middle;
+  }
+
+  /* ---- 選択ビュー ---- */
+  #selectView{flex:1;display:flex;flex-direction:column;min-height:0;}
+  .heading{padding:16px 16px 4px 16px;font-size:15px;font-weight:700;}
+  .sub-note{padding:0 16px 10px 16px;font-size:11.5px;color:var(--sub);}
+
+  .namelist{flex:1;overflow-y:auto;padding:4px 16px 12px 16px;}
+  .namechip{
+    display:block;width:100%;text-align:left;font-family:inherit;
+    font-size:14.5px;font-weight:700;color:var(--ink);
+    background:#fff;border:1px solid var(--line);border-radius:10px;
+    padding:12px 14px;margin-bottom:8px;cursor:pointer;
+  }
+  .namechip:active{transform:translateY(1px);}
+  .namechip.sel{
+    background:#eef4ee;border-color:var(--vine);color:var(--vine-deep);
+  }
+  .emptylist{text-align:center;color:var(--sub);font-size:12.5px;padding:32px 16px;line-height:1.8;}
+
+  .bottomfixed{
+    border-top:1px solid var(--line);background:var(--paper);
+    padding:12px 16px;
+  }
+  .decide-note{font-size:11px;color:var(--sub);text-align:center;margin-bottom:10px;line-height:1.6;}
+  .decide-btn{
+    width:100%;font-family:inherit;font-size:15px;font-weight:700;color:#fff;
+    background:var(--vine);border:1px solid var(--vine-deep);border-radius:10px;
+    padding:13px 0;cursor:pointer;
+  }
+  .decide-btn:disabled{
+    background:var(--floor);border-color:var(--line);color:var(--sub);cursor:not-allowed;
+  }
+
+  /* ---- 確認ビュー ---- */
+  #confirmView{display:none;flex:1;flex-direction:column;align-items:center;justify-content:center;padding:32px 24px;text-align:center;}
+  .confirm-label{font-size:12px;color:var(--sub);margin-bottom:10px;}
+  .confirm-name{font-size:28px;font-weight:700;color:var(--vine-deep);margin-bottom:20px;}
+  .confirm-text{font-size:12.5px;color:var(--ink);line-height:1.9;margin-bottom:28px;}
+  .confirm-btns{width:100%;max-width:300px;display:flex;flex-direction:column;gap:10px;}
+  .btn{
+    font-family:inherit;font-size:14px;font-weight:700;
+    border-radius:10px;padding:13px 0;cursor:pointer;
+  }
+  .btn:active{transform:translateY(1px);}
+  .btn.primary{background:var(--vine);border:1px solid var(--vine-deep);color:#fff;}
+  .btn.secondary{background:var(--floor);border:1px solid var(--line);color:var(--ink);}
+
+  /* ---- 完了オーバーレイ ---- */
+  .completeOverlay{
+    display:none;position:fixed;inset:0;z-index:70;background:rgba(30,30,28,.55);
+    align-items:center;justify-content:center;padding:20px;
+  }
+  .completeOverlay.show{display:flex;}
+  .completeCard{
+    background:#fff;border-radius:14px;padding:26px 22px;text-align:center;
+    max-width:320px;box-shadow:0 12px 40px rgba(0,0,0,.25);
+  }
+  .completeCard .ic{font-size:30px;margin-bottom:10px;}
+  .completeCard .msg{font-size:13.5px;font-weight:700;color:var(--vine-deep);line-height:1.7;}
+</style>
+</head>
+<body>
+<div class="phone">
+  <div class="mockbanner">⚠ これは検討用のモック画面です。実際のLINE認証は行われません。</div>
+
+  <div class="topbar">
+    <div class="brand"><span class="dot"></span>ミニトマト部会 出荷情報</div>
+  </div>
+
+  <!-- ===== 選択ビュー ===== -->
+  <div id="selectView">
+    <div class="heading">あなたのお名前を選んでください</div>
+    <div class="sub-note">初回ログインのみ必要な手続きです。名簿からご自身の氏名を選んでください。</div>
+    <div class="namelist" id="nameList"></div>
+    <div class="bottomfixed">
+      <div class="decide-note">自分の名前がない方は部会管理者へご連絡ください</div>
+      <button class="decide-btn" id="decideBtn" disabled>決定</button>
+    </div>
+  </div>
+
+  <!-- ===== 確認ビュー ===== -->
+  <div id="confirmView">
+    <div class="confirm-label">選択したお名前</div>
+    <div class="confirm-name" id="confirmName"></div>
+    <div class="confirm-text">この名前で間違いありませんか?<br>一度登録すると、変更には部会管理者への連絡が必要です。</div>
+    <div class="confirm-btns">
+      <button class="btn primary" id="registerBtn">はい、この名前で登録する</button>
+      <button class="btn secondary" id="reselectBtn">選び直す</button>
+    </div>
+  </div>
+</div>
+
+<div class="completeOverlay" id="completeOverlay">
+  <div class="completeCard">
+    <div class="ic">✅</div>
+    <div class="msg">登録しました。<br>管理者グループへ通知されます</div>
+  </div>
+</div>
+
+<script src="assets/members-data.js"></script>
+<script>
+  var LINKED_IDS_KEY = 'tomato_mock_linked_ids';
+  var LINK_NAME_KEY = 'tomato_mock_my_link_name';
+
+  function getLinkedIds(){
+    try{
+      var raw = localStorage.getItem(LINKED_IDS_KEY);
+      if(raw) return JSON.parse(raw);
+    }catch(e){}
+    var initial = MembersData.MEMBERS.filter(function(m){ return m.lineLinked; }).map(function(m){ return m.id; });
+    try{ localStorage.setItem(LINKED_IDS_KEY, JSON.stringify(initial)); }catch(e){}
+    return initial;
+  }
+  function saveLinkedIds(ids){
+    try{ localStorage.setItem(LINKED_IDS_KEY, JSON.stringify(ids)); }catch(e){}
+  }
+  function escapeHtml(s){
+    return String(s).replace(/[&<>"']/g, function(c){
+      return { "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c];
+    });
+  }
+
+  var selectedId = null;
+
+  function renderList(){
+    var linkedIds = getLinkedIds();
+    var available = MembersData.MEMBERS.filter(function(m){
+      return m.active && linkedIds.indexOf(m.id) === -1;
+    });
+    var wrap = document.getElementById('nameList');
+    if(!available.length){
+      wrap.innerHTML = '<div class="emptylist">選択できる名前がありません。<br>部会管理者へご連絡ください。</div>';
+      return;
+    }
+    wrap.innerHTML = available.map(function(m){
+      return '<button type="button" class="namechip" data-id="' + m.id + '">' + escapeHtml(m.name) + '</button>';
+    }).join('');
+    var chips = wrap.querySelectorAll('.namechip');
+    for(var i=0;i<chips.length;i++){
+      chips[i].addEventListener('click', function(e){
+        selectedId = +e.currentTarget.dataset.id;
+        var all = wrap.querySelectorAll('.namechip');
+        for(var j=0;j<all.length;j++){ all[j].classList.remove('sel'); }
+        e.currentTarget.classList.add('sel');
+        updateDecideBtn();
+      });
+    }
+  }
+
+  function updateDecideBtn(){
+    document.getElementById('decideBtn').disabled = (selectedId === null);
+  }
+
+  function showView(view){
+    document.getElementById('selectView').style.display = (view === 'select') ? 'flex' : 'none';
+    document.getElementById('confirmView').style.display = (view === 'confirm') ? 'flex' : 'none';
+  }
+
+  document.getElementById('decideBtn').addEventListener('click', function(){
+    if(selectedId === null) return;
+    var m = MembersData.MEMBERS.find(function(x){ return x.id === selectedId; });
+    if(!m) return;
+    document.getElementById('confirmName').textContent = m.name;
+    showView('confirm');
+  });
+
+  document.getElementById('reselectBtn').addEventListener('click', function(){
+    selectedId = null;
+    renderList();
+    updateDecideBtn();
+    showView('select');
+  });
+
+  document.getElementById('registerBtn').addEventListener('click', function(){
+    if(selectedId === null) return;
+    var linkedIds = getLinkedIds();
+    if(linkedIds.indexOf(selectedId) === -1) linkedIds.push(selectedId);
+    saveLinkedIds(linkedIds);
+    var m = MembersData.MEMBERS.find(function(x){ return x.id === selectedId; });
+    try{ localStorage.setItem(LINK_NAME_KEY, m.name); }catch(e){}
+    document.getElementById('completeOverlay').classList.add('show');
+    setTimeout(function(){ location.href = 'index.html'; }, 1500);
+  });
+
+  renderList();
+  updateDecideBtn();
+  showView('select');
+</script>
+</body>
+</html>

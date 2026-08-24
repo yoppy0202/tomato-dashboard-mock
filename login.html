@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ログイン(モック)</title>
+<style>
+  :root{
+    --ink:#232323;
+    --sub:#6f6f6f;
+    --line:#e3e2df;
+    --paper:#ffffff;
+    --floor:#faf9f7;
+    --vine:#4c7a52;
+    --vine-deep:#33583a;
+    --tomato:#c94a3c;
+    --tomato-deep:#a63a2f;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;background:#efeee9;
+    font-family:"Hiragino Sans","Yu Gothic UI","BIZ UDPGothic",system-ui,-apple-system,sans-serif;
+    color:var(--ink);-webkit-font-smoothing:antialiased;
+  }
+  .phone{
+    max-width:428px;margin:0 auto;background:var(--paper);
+    min-height:100vh;box-shadow:0 0 40px rgba(0,0,0,0.12);
+    display:flex;flex-direction:column;
+  }
+  .mockbanner{background:#fff5cc;color:#7a5c00;font-size:11px;text-align:center;padding:6px 10px;}
+
+  .loginbody{
+    flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;
+    padding:32px 28px;text-align:center;
+  }
+  .logo-dot{
+    display:inline-block;width:10px;height:10px;border-radius:50%;
+    background:var(--tomato);margin-bottom:14px;
+  }
+  .logo-title{font-size:19px;font-weight:700;letter-spacing:.02em;margin-bottom:4px;}
+  .logo-sub{font-size:12px;color:var(--sub);margin-bottom:44px;}
+
+  .line-btn{
+    width:100%;max-width:300px;background:#06C755;color:#fff;
+    font-family:inherit;font-weight:700;font-size:15px;
+    border:none;border-radius:10px;padding:14px 0;cursor:pointer;
+    display:flex;align-items:center;justify-content:center;gap:8px;
+  }
+  .line-btn:active{transform:translateY(1px);}
+  .line-btn .ic{font-size:16px;}
+
+  .id-link{
+    margin-top:20px;font-family:inherit;font-size:12.5px;color:var(--sub);
+    text-decoration:underline;background:none;border:none;cursor:pointer;padding:6px;
+  }
+
+  .login-note{
+    padding:16px 24px 22px 24px;text-align:center;font-size:10.5px;color:#b8b6b0;line-height:1.7;
+  }
+
+  /* ---- 簡易モーダル(IDログイン案内) ---- */
+  .modalbg{
+    display:none;position:fixed;inset:0;z-index:60;background:rgba(30,30,28,.45);
+    align-items:center;justify-content:center;padding:20px;
+  }
+  .modalbg.show{display:flex;}
+  .modal{
+    background:#fff;border-radius:14px;max-width:360px;width:100%;
+    padding:20px 20px 16px 20px;box-shadow:0 12px 40px rgba(0,0,0,.25);
+    text-align:left;
+  }
+  .modal .mtitle{font-size:14.5px;font-weight:700;margin-bottom:10px;}
+  .modal .mbody{font-size:13px;line-height:1.8;color:var(--ink);}
+  .modal .mbtns{display:flex;justify-content:flex-end;margin-top:16px;}
+  .btn{
+    font-family:inherit;font-size:13px;font-weight:700;color:var(--ink);
+    background:var(--floor);border:1px solid var(--line);border-radius:8px;
+    padding:9px 14px;cursor:pointer;
+  }
+  .btn:active{transform:translateY(1px);}
+  .btn.primary{background:var(--vine);border-color:var(--vine-deep);color:#fff;}
+</style>
+</head>
+<body>
+<div class="phone">
+  <div class="mockbanner">⚠ これは検討用のモック画面です。実際のLINE認証は行われません。</div>
+
+  <div class="loginbody">
+    <span class="logo-dot"></span>
+    <div class="logo-title">ミニトマト部会 出荷情報</div>
+    <div class="logo-sub">部会員向け 出荷・単価情報サービス</div>
+
+    <button class="line-btn" id="lineLoginBtn">
+      <span class="ic">💬</span>LINEでログイン
+    </button>
+    <button class="id-link" id="idLoginLink">IDでログイン</button>
+  </div>
+
+  <div class="login-note">本画面はモックです。実際のLINE認証は行われません。</div>
+</div>
+
+<div class="modalbg" id="idModalBg">
+  <div class="modal">
+    <div class="mtitle">IDでログイン</div>
+    <div class="mbody">正式版で提供予定です。<br>現在はLINEでログインをご利用ください。</div>
+    <div class="mbtns">
+      <button class="btn primary" id="idModalOk">OK</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  var LINK_NAME_KEY = 'tomato_mock_my_link_name';
+
+  document.getElementById('lineLoginBtn').addEventListener('click', function(){
+    var linkedName = null;
+    try{ linkedName = localStorage.getItem(LINK_NAME_KEY); }catch(e){}
+    location.href = linkedName ? 'index.html' : 'link.html';
+  });
+
+  document.getElementById('idLoginLink').addEventListener('click', function(){
+    document.getElementById('idModalBg').classList.add('show');
+  });
+  document.getElementById('idModalOk').addEventListener('click', function(){
+    document.getElementById('idModalBg').classList.remove('show');
+  });
+</script>
+</body>
+</html>
