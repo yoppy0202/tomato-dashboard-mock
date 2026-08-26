@@ -1,0 +1,688 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>操作ログ(モック)</title>
+<style>
+  :root{
+    --ink:#232323;
+    --sub:#6f6f6f;
+    --line:#e3e2df;
+    --paper:#ffffff;
+    --floor:#faf9f7;
+    --vine:#4c7a52;
+    --vine-deep:#33583a;
+    --tomato:#c94a3c;
+    --sat:#2f6fb0;
+    --sat-bg:#eaf2fa;
+    --hol:#c94a3c;
+    --hol-bg:#fbebe9;
+    --warn-bg:#fbf1e1;
+    --admin:#8a6d1f;
+    --admin-bg:#f6efd9;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;background:#efeee9;
+    font-family:"Hiragino Sans","Yu Gothic UI","BIZ UDPGothic",system-ui,-apple-system,sans-serif;
+    color:var(--ink);-webkit-font-smoothing:antialiased;
+  }
+  .phone{
+    max-width:428px;margin:0 auto;background:var(--paper);
+    min-height:100vh;box-shadow:0 0 40px rgba(0,0,0,0.12);
+    padding-bottom:60px;
+  }
+  .mockbanner{
+    background:#fff5cc;color:#7a5c00;font-size:11px;text-align:center;padding:6px 10px;
+  }
+  .topbar{
+    padding:14px 16px 12px 16px;position:sticky;top:0;background:var(--paper);
+    z-index:20;border-bottom:1px solid var(--line);
+  }
+  .brandrow{display:flex;align-items:baseline;justify-content:space-between;}
+  .brand{font-size:15px;font-weight:700;letter-spacing:.02em;}
+  .brand .dot{
+    display:inline-block;width:7px;height:7px;border-radius:50%;
+    background:var(--tomato);margin-right:6px;vertical-align:middle;
+  }
+  .backlink{font-size:11.5px;color:var(--sub);text-decoration:none;}
+  .pagetitle{font-size:13px;font-weight:700;color:var(--vine-deep);margin-top:8px;}
+
+  section{padding:12px 16px 0 16px;}
+  h3{
+    font-size:12px;color:var(--sub);font-weight:700;
+    margin:6px 0 8px 0;letter-spacing:.03em;
+  }
+  select,.btn,input[type="text"]{
+    font-family:inherit;font-size:13px;font-weight:700;color:var(--ink);
+    background:var(--floor);border:1px solid var(--line);border-radius:8px;
+    padding:8px 10px;
+  }
+  input[type="text"]{font-weight:400;width:100%;}
+  .btn{cursor:pointer;}
+  .btn:active{transform:translateY(1px);}
+  .btn.primary{background:var(--vine);border-color:var(--vine-deep);color:#fff;}
+
+  /* ---- 期間選択 ---- */
+  .period{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+  .period .tilde{color:var(--sub);}
+  .rangechips{margin-top:8px;font-size:12px;color:var(--sub);}
+  .chip{
+    display:inline-block;font-weight:700;border-radius:8px;
+    padding:2px 8px;border:1px solid var(--line);background:var(--floor);
+  }
+  .chip.sat{color:var(--sat);background:var(--sat-bg);border-color:#bcd4ec;}
+  .chip.hol{color:var(--hol);background:var(--hol-bg);border-color:#eec6c1;}
+
+  /* ---- フィルタ ---- */
+  details.filters{
+    margin-top:12px;border:1px solid var(--line);border-radius:12px;overflow:hidden;
+  }
+  details.filters summary{
+    list-style:none;cursor:pointer;background:var(--floor);
+    padding:10px 14px;font-size:13px;font-weight:700;
+    display:flex;justify-content:space-between;align-items:center;
+  }
+  details.filters summary::after{content:"▾";color:var(--sub);}
+  details.filters[open] summary::after{content:"▴";}
+  .fgroup{padding:8px 14px 4px 14px;border-top:1px solid var(--line);}
+  .fgroup .ghead{
+    display:flex;justify-content:space-between;align-items:center;
+    font-size:11px;color:var(--sub);font-weight:700;margin-bottom:6px;
+  }
+  .minibtn{
+    font-family:inherit;font-size:10.5px;color:var(--vine-deep);
+    background:#eef4ee;border:1px solid #cfe1d1;border-radius:12px;
+    padding:2px 8px;cursor:pointer;margin-left:6px;
+  }
+  .checks{display:flex;flex-wrap:wrap;gap:6px 4px;padding-bottom:6px;}
+  .checks label{
+    display:inline-flex;align-items:center;gap:4px;
+    font-size:12.5px;border:1px solid var(--line);border-radius:16px;
+    padding:5px 10px;background:#fff;cursor:pointer;
+  }
+  .checks input{accent-color:var(--vine);}
+  .checks label:has(input:checked){
+    background:#eef4ee;border-color:var(--vine);color:var(--vine-deep);font-weight:700;
+  }
+  .fgroup select{width:100%;}
+  .applyrow{padding:10px 14px;border-top:1px solid var(--line);text-align:right;}
+
+  /* ---- 結果ヘッダ ---- */
+  .resulthead{
+    display:flex;justify-content:space-between;align-items:center;
+    margin-top:14px;
+  }
+  .count{font-size:12px;color:var(--sub);}
+  .filtersummary{font-size:11px;color:var(--sub);font-weight:400;}
+
+  /* ---- ログ一覧(カード) ---- */
+  .loglist{margin-top:8px;}
+  .logitem{
+    border:1px solid var(--line);border-radius:10px;margin-top:8px;
+    overflow:hidden;background:#fff;
+  }
+  .logrow{padding:10px 12px;}
+  .logrow.hasdetail{cursor:pointer;}
+  .logrow.hasdetail:active{background:var(--floor);}
+  .logdt{font-size:10.5px;color:var(--sub);font-variant-numeric:tabular-nums;}
+  .logline2{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-top:4px;}
+  .logactor{font-size:12.5px;font-weight:700;}
+  .logactor.unknown{font-weight:400;color:var(--sub);}
+  .logsummary{font-size:12.5px;color:var(--ink);line-height:1.4;margin-top:4px;}
+  .logfoot{display:flex;align-items:center;justify-content:flex-end;gap:6px;margin-top:6px;}
+  .detailcount{font-size:10.5px;color:var(--sub);}
+  .caret{font-size:9px;color:var(--sub);transition:transform .15s;display:inline-block;}
+  .logitem.open .caret{transform:rotate(90deg);}
+
+  .badge{font-size:10px;font-weight:700;border-radius:12px;padding:2px 8px;white-space:nowrap;}
+  .badge.c-green{color:var(--vine-deep);background:#eef4ee;border:1px solid #cfe1d1;}
+  .badge.c-red{color:var(--hol);background:var(--hol-bg);border:1px solid #eec6c1;}
+  .badge.c-blue{color:var(--sat);background:var(--sat-bg);border:1px solid #bcd4ec;}
+  .badge.c-blue-strong{color:#fff;background:var(--sat);border:1px solid #23578e;}
+  .badge.c-purple{color:#6a4fa0;background:#efe9f7;border:1px solid #d9cbee;}
+  .badge.c-gray{color:#5a5a5a;background:#efeeea;border:1px solid #ddd9d2;}
+  .badge.c-orange{color:#7a5410;background:var(--warn-bg);border:1px solid #ecd7ae;}
+  .badge.sysadmin{color:#fff;background:var(--tomato);border:1px solid var(--tomato);}
+
+  /* ---- 子明細 ---- */
+  .logdetail{display:none;border-top:1px solid var(--line);background:var(--floor);padding:8px 12px 10px 12px;}
+  .logitem.open .logdetail{display:block;}
+  table.dtl{border-collapse:collapse;width:100%;font-size:11.5px;table-layout:fixed;}
+  .dtl th,.dtl td{padding:6px 5px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top;word-break:break-word;}
+  .dtl th{color:var(--sub);font-weight:700;font-size:9.5px;}
+  .dtl tr:last-child td{border-bottom:none;}
+  .dtl th:nth-child(1),.dtl td:nth-child(1){width:34%;}
+  .dtl th:nth-child(2),.dtl td:nth-child(2){width:20%;}
+  .chgline{display:flex;align-items:center;flex-wrap:wrap;gap:3px;}
+  .chgline .before{color:var(--sub);}
+  .chgline .arrow{color:var(--sub);}
+  .chgline .after{color:var(--ink);font-weight:700;}
+  .chgstack .longtext{
+    display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;
+    overflow:hidden;line-height:1.5;
+  }
+  .chgstack .longtext.expanded{-webkit-line-clamp:unset;overflow:visible;}
+  .chgstack .arrowv{color:var(--sub);font-size:10.5px;margin:2px 0;}
+  .morelink{font-size:10.5px;color:var(--sat);cursor:pointer;display:inline-block;margin-top:4px;}
+
+  /* ---- ページ分割 ---- */
+  .pager{
+    display:flex;justify-content:center;align-items:center;gap:10px;
+    margin:14px 0 4px 0;font-size:12.5px;
+  }
+  .pager button{
+    font-family:inherit;background:var(--floor);border:1px solid var(--line);
+    border-radius:8px;padding:6px 12px;font-size:12.5px;cursor:pointer;
+  }
+  .pager button:disabled{opacity:.4;cursor:default;}
+  .pagernote{font-size:10px;color:var(--sub);text-align:center;margin-bottom:8px;}
+
+  .emptystate{
+    text-align:center;color:var(--sub);font-size:13px;padding:44px 16px;
+  }
+</style>
+</head>
+<body>
+<div class="phone">
+  <div class="mockbanner">⚠ これは検討用のモック画面です。ログの内容はすべてダミーで、本番の仕様・デザインとは異なります。</div>
+  <div id="roleToggleMount"></div>
+  <div id="adminBand"></div>
+  <div id="generalNav"></div>
+  <div class="topbar">
+    <div class="brandrow">
+      <div class="brand"><span class="dot"></span>ミニトマト部会 出荷情報</div>
+      <a class="backlink" href="index.html">← TOPへ戻る</a>
+    </div>
+    <div class="pagetitle">🗒 操作ログ</div>
+  </div>
+
+  <section>
+    <h3>期間</h3>
+    <div class="period">
+      <select id="fromSel"></select>
+      <span class="tilde">〜</span>
+      <select id="toSel"></select>
+    </div>
+    <div class="rangechips" id="rangeChips"></div>
+
+    <details class="filters">
+      <summary>絞り込み <span id="filterSummary" class="filtersummary"></span></summary>
+
+      <div class="fgroup">
+        <div class="ghead">操作種別
+          <span>
+            <button class="minibtn" data-all="evgroup">全選択</button>
+            <button class="minibtn" data-none="evgroup">全解除</button>
+          </span>
+        </div>
+        <div class="checks" data-g="evgroup">
+          <label><input type="checkbox" value="login" checked>ログイン</label>
+          <label><input type="checkbox" value="data" checked>データ</label>
+          <label><input type="checkbox" value="announce" checked>お知らせ</label>
+          <label><input type="checkbox" value="minutes" checked>議事録</label>
+          <label><input type="checkbox" value="master" checked>マスタ</label>
+          <label><input type="checkbox" value="member" checked>名簿</label>
+        </div>
+      </div>
+
+      <div class="fgroup">
+        <div class="ghead">操作者</div>
+        <select id="actorSel"></select>
+      </div>
+
+      <div class="fgroup">
+        <div class="ghead">市場
+          <span>
+            <button class="minibtn" data-all="mkt">全選択</button>
+            <button class="minibtn" data-none="mkt">全解除</button>
+          </span>
+        </div>
+        <div class="checks" data-g="mkt" id="mktChecks"></div>
+      </div>
+
+      <div class="fgroup">
+        <div class="ghead">キーワード(概要)</div>
+        <input type="text" id="kwInput" placeholder="概要に含まれる語句で検索">
+      </div>
+
+      <div class="applyrow">
+        <button class="btn primary" id="applyBtn">この条件で表示</button>
+      </div>
+    </details>
+
+    <div class="resulthead">
+      <span class="count" id="countTxt"></span>
+    </div>
+
+    <div class="loglist" id="logList"></div>
+
+    <div class="pager">
+      <button id="prevBtn">◀ 前へ</button>
+      <span id="pageTxt"></span>
+      <button id="nextBtn">次へ ▶</button>
+    </div>
+    <div class="pagernote">一覧は50件ずつ表示(1操作=1行、タップで明細を展開)</div>
+  </section>
+</div>
+
+<script src="assets/members-data.js"></script>
+<script>
+const MARKETS = ["東京","神奈川","徳島","北九州","福岡","長崎","諫早"];
+const SIZES = ["2L","L","M","S","2S"];
+const HOLIDAYS = ["7/20","8/11"]; // 海の日・山の日(2026年)
+const NAMES = MembersData.NAMES;
+
+function escapeHtml(s){
+  return String(s).replace(/[&<>"']/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
+}
+
+// ---- 種別の定義(絞り込みグループはcc_01の6グループのまま増やさない) ----
+const TYPE_DEFS = {
+  login_ok:           { label:"ログイン",           cls:"c-green",       group:"login" },
+  login_ng:           { label:"ログイン失敗",       cls:"c-red",         group:"login" },
+  fact_save:          { label:"データ入力",         cls:"c-blue",        group:"data" },
+  fact_confirm:       { label:"データ確定",         cls:"c-blue-strong", group:"data" },
+  announce_post:      { label:"お知らせ投稿",       cls:"c-green",       group:"announce" },
+  announce_revise:    { label:"お知らせ訂正",       cls:"c-green",       group:"announce" },
+  announce_withdraw:  { label:"お知らせ取り下げ",   cls:"c-red",         group:"announce" },
+  announce_republish: { label:"お知らせ再掲載",     cls:"c-green",       group:"announce" },
+  announce_delete:    { label:"お知らせ削除",       cls:"c-red",         group:"announce" },
+  line_share:         { label:"LINE共有",           cls:"c-green",       group:"announce" },
+  minutes_change:     { label:"議事録編集",         cls:"c-purple",      group:"minutes" },
+  minutes_withdraw:   { label:"議事録取り下げ",     cls:"c-red",         group:"minutes" },
+  minutes_republish:  { label:"議事録再反映",       cls:"c-purple",      group:"minutes" },
+  minutes_delete:     { label:"議事録削除",         cls:"c-red",         group:"minutes" },
+  master_change:      { label:"マスタ変更",         cls:"c-gray",        group:"master" },
+  axis_migration:     { label:"軸の移行",           cls:"c-gray",        group:"master" },
+  member_change:      { label:"名簿変更",           cls:"c-orange",      group:"member" },
+  session_revoke:     { label:"セッション失効",     cls:"c-orange",      group:"member" }
+};
+
+// ---- 期間(直近2ヶ月・list.htmlと同じ方式の日付プルダウン) ----
+const WD = ["日","月","火","水","木","金","土"];
+const RANGE_START = new Date(2026,5,25); // 6/25
+const RANGE_END   = new Date(2026,7,24); // 8/24
+function dateList(){
+  const out = [];
+  const d = new Date(RANGE_START);
+  while(d <= RANGE_END){
+    const md = `${d.getMonth()+1}/${d.getDate()}`;
+    const w = d.getDay();
+    let cls = "";
+    if(w===6) cls = "sat";
+    if(w===0 || HOLIDAYS.includes(md)) cls = "hol";
+    const ymd = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+    out.push({ key:md, ymd, label:`${md}(${WD[w]})`, cls });
+    d.setDate(d.getDate()+1);
+  }
+  return out;
+}
+const DATES = dateList();
+
+const fromSel = document.getElementById("fromSel");
+const toSel = document.getElementById("toSel");
+DATES.forEach(d=>{
+  fromSel.insertAdjacentHTML("beforeend",`<option value="${d.key}">${d.label}</option>`);
+  toSel.insertAdjacentHTML("beforeend",`<option value="${d.key}">${d.label}</option>`);
+});
+fromSel.value = DATES[0].key;
+toSel.value = DATES[DATES.length-1].key;
+function renderRangeChips(){
+  const f = DATES.find(d=>d.key===fromSel.value);
+  const t = DATES.find(d=>d.key===toSel.value);
+  document.getElementById("rangeChips").innerHTML =
+    `表示中: <span class="chip ${f.cls}">${f.label}</span> 〜 <span class="chip ${t.cls}">${t.label}</span>` +
+    (f.key===t.key ? "(単日)" : "");
+}
+
+// ---- 操作種別・市場・操作者のチェック/選択UI ----
+document.querySelectorAll(".minibtn").forEach(b=>{
+  b.addEventListener("click",(e)=>{
+    e.preventDefault();
+    const g = b.dataset.all || b.dataset.none;
+    document.querySelectorAll(`[data-g="${g}"] input`).forEach(c=>c.checked = !!b.dataset.all);
+  });
+});
+function checkedVals(g){
+  return [...document.querySelectorAll(`[data-g="${g}"] input:checked`)].map(c=>c.value);
+}
+const mktChecks = document.getElementById("mktChecks");
+MARKETS.forEach(m=>{
+  mktChecks.insertAdjacentHTML("beforeend",`<label><input type="checkbox" value="${m}" checked>${m}</label>`);
+});
+const actorSel = document.getElementById("actorSel");
+actorSel.insertAdjacentHTML("beforeend", `<option value="__all__">すべて</option>`);
+NAMES.forEach(n=>{
+  actorSel.insertAdjacentHTML("beforeend", `<option value="${escapeHtml(n)}">${escapeHtml(n)}</option>`);
+});
+actorSel.insertAdjacentHTML("beforeend", `<option value="__unknown__">(不明)</option>`);
+
+// ---- ダミーデータ生成 ----
+let LOGS = [];
+let _id = 1;
+function push(entry){
+  entry.id = _id++;
+  if(entry.markets === undefined) entry.markets = [];
+  if(entry.bySystemAdmin === undefined) entry.bySystemAdmin = false;
+  LOGS.push(entry);
+}
+
+// 長文サンプル(お知らせ本文・議事録本文の折りたたみ確認用)
+const LONG_POST_BODY =
+  "平素より部会の運営にご協力いただきありがとうございます。悪天候の影響により一時見合わせておりました出荷を、"
+  + "8月24日(月)より通常どおり再開いたします。各市場への搬入時間は従来どおりです。荷姿・規格に変更はありませんが、"
+  + "選果基準の再確認をお願いいたします。ご不明な点は事務局までお問い合わせください。";
+const LONG_REVISE_BEFORE =
+  "いつも部会活動にご協力いただきありがとうございます。9月出荷分より一部規格の呼称を変更いたします。"
+  + "現行「3kgバラ」は「3kg箱」に名称変更となります。中身・重量に変更はございません。詳細は追ってご案内します。";
+const LONG_REVISE_AFTER =
+  "いつも部会活動にご協力いただきありがとうございます。9月1日出荷分より一部規格の呼称を変更いたします。"
+  + "現行「3kgバラ」は「3kgケース」に名称変更となります。中身・重量に変更はございません。詳細は追ってご案内します。";
+const LONG_MINUTES_BEFORE =
+  "【2026年8月定例会(案)】前回議事録の確認、8月出荷状況の報告(前年比102%)、市場別単価の共有、その他連絡事項を予定。";
+const LONG_MINUTES_AFTER =
+  "【2026年8月定例会】前回議事録を承認。8月の出荷状況(前年比102%、天候不順による一時中断を含む)を報告し、"
+  + "市場別単価を共有(徳島市場の単価上昇を確認)。次回開催日を9月14日に決定し、その他連絡事項を共有して閉会した。";
+
+function bigFactSaveDetails(n){
+  const out = [];
+  const used = new Set();
+  for(let i=0;i<n;i++){
+    const m = MARKETS[i % MARKETS.length];
+    const s = SIZES[i % SIZES.length];
+    used.add(m);
+    out.push({ target:`${m}市場 / ${s}`, item:"数量", before:"(なし)", after:`${20+(i*3)%40}パック` });
+  }
+  return { details: out, markets: [...used] };
+}
+
+// ---- 種別を網羅する個別シナリオ(全18種別・cc_01/追補の必須ケースを含む) ----
+push({ ymd:"2026-08-24", hm:"14:32", actor:"山本 貴之", type:"minutes_change",
+  summary:"8/24 定例会議事録を編集",
+  details:[{ target:"2026年8月定例会 議事録", item:"本文", before:LONG_MINUTES_BEFORE, after:LONG_MINUTES_AFTER, long:true }] });
+
+push({ ymd:"2026-08-24", hm:"14:20", actor:"山本 貴之", type:"minutes_republish",
+  summary:"8/10 臨時会議事録を再反映",
+  details:[{ target:"2026年8月10日 臨時会 議事録", item:"公開状態", before:"取り下げ済み", after:"再反映(公開中)" }] });
+
+push({ ymd:"2026-08-24", hm:"09:05", actor:"山本 貴之", type:"minutes_withdraw",
+  summary:"8/10 臨時会議事録を取り下げ",
+  details:[{ target:"2026年8月10日 臨時会 議事録", item:"公開状態", before:"公開中", after:"取り下げ済み" }] });
+
+push({ ymd:"2026-08-23", hm:"10:15", actor:"佐藤 太郎", type:"announce_post",
+  summary:"「出荷再開のお知らせ」を投稿",
+  details:[{ target:"お知らせ「出荷再開のお知らせ」", item:"本文", before:"(なし)", after:LONG_POST_BODY, long:true }] });
+
+push({ ymd:"2026-08-23", hm:"10:16", actor:"佐藤 太郎", type:"line_share",
+  summary:"「出荷再開のお知らせ」をLINEグループへ共有",
+  details:[{ target:"お知らせ「出荷再開のお知らせ」", item:"共有先", before:"(なし)", after:"LINEグループ「ミニトマト部会」" }] });
+
+push({ ymd:"2026-08-22", hm:"19:44", actor:null, type:"login_ng",
+  summary:"ログイン失敗(パスワード誤り)",
+  details:[] });
+
+push({ ymd:"2026-08-21", hm:"11:02", actor:"田中 智子", type:"announce_withdraw",
+  summary:"「市場休場のお知らせ」を取り下げ",
+  details:[{ target:"お知らせ「市場休場のお知らせ」", item:"掲載状態", before:"掲載中", after:"取り下げ済み" }] });
+
+push({ ymd:"2026-08-21", hm:"11:40", actor:"田中 智子", type:"announce_republish",
+  summary:"「市場休場のお知らせ」を再掲載",
+  details:[{ target:"お知らせ「市場休場のお知らせ」", item:"掲載状態", before:"取り下げ済み", after:"再掲載" }] });
+
+push({ ymd:"2026-08-19", hm:"16:08", actor:"佐藤 太郎", type:"announce_delete",
+  summary:"「テスト投稿」を削除",
+  details:[{ target:"お知らせ「テスト投稿」", item:"掲載状態", before:"掲載中", after:"(削除)" }] });
+
+(function(){
+  const big = bigFactSaveDetails(26);
+  push({ ymd:"2026-08-18", hm:"08:50", actor:"鈴木 由美子", type:"fact_save",
+    summary:"8/18 個人選果 26セル入力",
+    details:big.details, markets:big.markets });
+})();
+
+push({ ymd:"2026-08-18", hm:"08:55", actor:"鈴木 由美子", type:"fact_confirm",
+  summary:"8/18 個人選果 26セル確定",
+  details:[{ target:"8/18 個人選果 全体", item:"ステータス", before:"入力中", after:"確定済み" }],
+  markets:["東京","神奈川","徳島","北九州","福岡","長崎","諫早"] });
+
+push({ ymd:"2026-08-15", hm:"21:30", actor:"佐藤 太郎", type:"master_change",
+  summary:"市場マスタの並び順を変更",
+  bySystemAdmin:true,
+  details:[{ target:"市場マスタ", item:"表示順(諫早)", before:"6番目", after:"7番目" }] });
+
+push({ ymd:"2026-08-14", hm:"21:31", actor:"佐藤 太郎", type:"axis_migration",
+  summary:"サイズ軸を新定義へ移行",
+  bySystemAdmin:true,
+  details:[
+    { target:"軸「サイズ」", item:"軸定義バージョン", before:"v1(5区分)", after:"v2(6区分:2L/L/M/S/2S/規格外)" },
+    { target:"軸「サイズ」", item:"影響件数", before:"―", after:"過去実績1,204件を再マッピング" }
+  ] });
+
+push({ ymd:"2026-08-12", hm:"15:20", actor:"佐藤 太郎", type:"announce_revise",
+  summary:"「出荷規格変更のお知らせ」を訂正(誤字修正)",
+  details:[{ target:"お知らせ「出荷規格変更のお知らせ」", item:"本文", before:LONG_REVISE_BEFORE, after:LONG_REVISE_AFTER, long:true }] });
+
+push({ ymd:"2026-08-10", hm:"13:02", actor:"田中 智子", type:"member_change",
+  summary:"「渡辺 恵子」を追加(LINE未連携)",
+  details:[{ target:"部会員名簿", item:"氏名", before:"(なし)", after:"渡辺 恵子" }] });
+
+push({ ymd:"2026-08-07", hm:"17:12", actor:"田中 智子", type:"member_change",
+  summary:"「高橋 健太」の権限を管理者に変更",
+  details:[{ target:"部会員名簿 / 高橋 健太", item:"権限", before:"閲覧", after:"管理者" }] });
+
+push({ ymd:"2026-08-05", hm:"12:00", actor:"田中 智子", type:"member_change",
+  summary:"「小林 修」のLINE紐付けを解除",
+  details:[{ target:"部会員名簿 / 小林 修", item:"LINE連携状態", before:"連携済み", after:"未連携" }] });
+
+push({ ymd:"2026-08-05", hm:"12:00", actor:"田中 智子", type:"session_revoke",
+  summary:"「小林 修」の旧セッションを失効",
+  details:[{ target:"小林 修", item:"セッション", before:"有効", after:"失効" }] });
+
+push({ ymd:"2026-07-30", hm:"09:15", actor:"佐藤 太郎", type:"login_ok",
+  summary:"ログイン", details:[] });
+
+push({ ymd:"2026-07-28", hm:"10:40", actor:"山本 貴之", type:"minutes_delete",
+  summary:"7/13 臨時会議事録を削除(重複投稿のため)",
+  details:[{ target:"2026年7月13日 臨時会 議事録", item:"公開状態", before:"公開中", after:"(削除)" }] });
+
+// ---- 残りは機械的に生成(ページ分割の挙動確認用に60〜80件程度まで積み増す) ----
+const ANNOUNCE_TITLES = ["出荷予定のお知らせ","選果基準に関するお知らせ","部会総会のご案内","規格変更のお知らせ"];
+const FILLER_POOL = [
+  "fact_save","fact_save","fact_confirm","login_ok","fact_save",
+  "announce_revise","fact_confirm","master_change","fact_save","member_change",
+  "login_ok","fact_confirm","fact_save","minutes_change","fact_save"
+];
+function fmtHm(i){
+  const h = 7 + ((i*3) % 12);
+  const m = (i*17) % 60;
+  return String(h).padStart(2,"0") + ":" + String(m).padStart(2,"0");
+}
+for(let i=0;i<50;i++){
+  const date = DATES[(i*5+11) % DATES.length];
+  const hm = fmtHm(i);
+  let type = FILLER_POOL[i % FILLER_POOL.length];
+  if(i % 17 === 0) type = "login_ng"; // 追加のログイン失敗ケース(たまに混ぜる)
+  const actor = NAMES[(i*9+3) % NAMES.length];
+  let entry = { ymd:date.ymd, hm, actor, type };
+
+  if(type === "fact_save"){
+    const market = MARKETS[i % MARKETS.length];
+    const size = SIZES[i % SIZES.length];
+    const isSolo = i % 2 === 0;
+    const packMode = isSolo ? "個人選果" : "共同選果";
+    const unit = isSolo ? "パック" : "ケース";
+    const qty = 20 + ((i*7) % 50);
+    const price = isSolo ? 160 + ((i*3) % 40) : 2400 + ((i*11) % 300);
+    entry.summary = `${date.key} ${packMode} ${market}/${size} を入力`;
+    entry.markets = [market];
+    entry.details = [
+      { target:`${market}市場 / ${size}`, item:"数量", before:"(なし)", after:`${qty}${unit}` },
+      { target:`${market}市場 / ${size}`, item:"単価", before:"(なし)", after:`${price}円/${unit}` }
+    ];
+  } else if(type === "fact_confirm"){
+    const market = MARKETS[(i+2) % MARKETS.length];
+    const packMode = i % 2 === 0 ? "個人選果" : "共同選果";
+    entry.summary = `${date.key} ${packMode} を確定`;
+    entry.markets = [market];
+    entry.details = [{ target:`${date.key} ${packMode}`, item:"ステータス", before:"入力中", after:"確定済み" }];
+  } else if(type === "login_ok"){
+    entry.summary = "ログイン";
+    entry.details = [];
+  } else if(type === "login_ng"){
+    entry.actor = null;
+    entry.summary = i % 2 === 0 ? "ログイン失敗(パスワード誤り)" : "ログイン失敗(アカウント未登録)";
+    entry.details = [];
+  } else if(type === "announce_revise"){
+    const title = ANNOUNCE_TITLES[i % ANNOUNCE_TITLES.length];
+    entry.summary = `お知らせ「${title}」を訂正`;
+    entry.details = [{ target:`お知らせ「${title}」`, item:"本文", before:"(訂正前の本文)", after:"(訂正後の本文)" }];
+  } else if(type === "master_change"){
+    entry.bySystemAdmin = i % 3 === 0;
+    entry.summary = "サイズマスタの表示名を変更";
+    entry.details = [{ target:"サイズマスタ", item:"表示名(2S)", before:"2S", after:"2S(小玉)" }];
+  } else if(type === "member_change"){
+    const nm = NAMES[(i*13+5) % NAMES.length];
+    entry.summary = `「${nm}」の連絡先を更新`;
+    entry.details = [{ target:`部会員名簿 / ${nm}`, item:"電話番号", before:"090-xxxx-xxx1", after:"090-xxxx-xxx2" }];
+  } else if(type === "minutes_change"){
+    entry.summary = `${date.key} 定例会議事録を編集`;
+    entry.details = [{ target:`${date.key} 定例会 議事録`, item:"本文", before:"(編集前の内容)", after:"(編集後の内容)" }];
+  }
+  push(entry);
+}
+
+// ---- 絞り込み・並び替え・ページ分割 ----
+const PAGE = 50;
+let page = 1;
+let current = [];
+
+function applyFilter(){
+  const fi = DATES.findIndex(d=>d.key===fromSel.value);
+  const ti = DATES.findIndex(d=>d.key===toSel.value);
+  const [lo,hi] = fi<=ti ? [fi,ti] : [ti,fi];
+  const loYmd = DATES[lo].ymd, hiYmd = DATES[hi].ymd;
+  const groups = checkedVals("evgroup");
+  const mkts = checkedVals("mkt");
+  const actorVal = actorSel.value;
+  const kw = document.getElementById("kwInput").value.trim();
+
+  current = LOGS.filter(l=>{
+    if(l.ymd < loYmd || l.ymd > hiYmd) return false;
+    if(!groups.includes(TYPE_DEFS[l.type].group)) return false;
+    if(l.markets.length && !l.markets.some(m=>mkts.includes(m))) return false;
+    if(actorVal === "__unknown__"){ if(l.actor) return false; }
+    else if(actorVal !== "__all__"){ if(l.actor !== actorVal) return false; }
+    if(kw && !l.summary.includes(kw)) return false;
+    return true;
+  }).sort((a,b)=> (b.ymd+b.hm).localeCompare(a.ymd+a.hm));
+
+  page = 1;
+  renderRangeChips();
+  renderList();
+
+  const parts = [];
+  if(groups.length < 6) parts.push(`種別${groups.length}件`);
+  if(mkts.length < 7) parts.push(`市場${mkts.length}件`);
+  if(actorVal !== "__all__") parts.push(actorVal === "__unknown__" ? "操作者:(不明)" : `操作者:${actorVal}`);
+  if(kw) parts.push(`「${kw}」`);
+  document.getElementById("filterSummary").textContent = parts.length ? "─ " + parts.join(" / ") : "";
+}
+
+function chgCellHtml(d, uid){
+  if(d.long){
+    return `<div class="chgstack">`
+      + `<div class="longtext" data-role="before">${escapeHtml(d.before || "(なし)")}</div>`
+      + `<div class="arrowv">↓</div>`
+      + `<div class="longtext" data-role="after">${escapeHtml(d.after || "(なし)")}</div>`
+      + `</div>`
+      + `<span class="morelink" data-uid="${uid}">全文を見る</span>`;
+  }
+  return `<div class="chgline">`
+    + `<span class="before">${escapeHtml(d.before || "(なし)")}</span>`
+    + `<span class="arrow">→</span>`
+    + `<span class="after">${escapeHtml(d.after || "(なし)")}</span>`
+    + `</div>`;
+}
+
+function renderDetail(log){
+  const rows = log.details.map((d,idx)=>{
+    return `<tr><td>${escapeHtml(d.target)}</td><td>${escapeHtml(d.item)}</td><td>${chgCellHtml(d, log.id+"-"+idx)}</td></tr>`;
+  }).join("");
+  return `<table class="dtl"><thead><tr><th>対象</th><th>項目</th><th>変更前 → 変更後</th></tr></thead><tbody>${rows}</tbody></table>`;
+}
+
+function renderItem(log){
+  const t = TYPE_DEFS[log.type];
+  const hasDetail = log.details.length > 0;
+  const dateLabel = `${log.ymd} ${log.hm}(${WD[new Date(log.ymd+"T00:00:00").getDay()]})`;
+  return `<div class="logitem" data-id="${log.id}">`
+    + `<div class="logrow${hasDetail ? " hasdetail" : ""}">`
+    + `<div class="logdt">${dateLabel}</div>`
+    + `<div class="logline2">`
+    + `<span class="logactor${log.actor ? "" : " unknown"}">${log.actor ? escapeHtml(log.actor) : "(不明)"}</span>`
+    + `<span class="badge ${t.cls}">${t.label}</span>`
+    + (log.bySystemAdmin ? `<span class="badge sysadmin">システム管理者</span>` : "")
+    + `</div>`
+    + `<div class="logsummary">${escapeHtml(log.summary)}</div>`
+    + `<div class="logfoot">`
+    + `<span class="detailcount">${hasDetail ? "明細 " + log.details.length + "件" : "明細 ―"}</span>`
+    + (hasDetail ? `<span class="caret">▸</span>` : "")
+    + `</div>`
+    + `</div>`
+    + (hasDetail ? `<div class="logdetail">${renderDetail(log)}</div>` : "")
+    + `</div>`;
+}
+
+function renderList(){
+  const listEl = document.getElementById("logList");
+  const total = current.length;
+  if(total === 0){
+    listEl.innerHTML = `<div class="emptystate">条件に一致する操作ログはありません</div>`;
+  } else {
+    const start = (page-1)*PAGE;
+    const rows = current.slice(start, start+PAGE);
+    listEl.innerHTML = rows.map(renderItem).join("");
+  }
+  const pages = Math.max(1, Math.ceil(total/PAGE));
+  document.getElementById("countTxt").textContent = `該当 ${total.toLocaleString()}件`;
+  document.getElementById("pageTxt").textContent = `${page} / ${pages} ページ`;
+  document.getElementById("prevBtn").disabled = page<=1;
+  document.getElementById("nextBtn").disabled = page>=pages;
+}
+
+document.getElementById("logList").addEventListener("click",(e)=>{
+  const more = e.target.closest(".morelink");
+  if(more){
+    e.stopPropagation();
+    const cell = more.closest("td");
+    const lts = cell.querySelectorAll(".longtext");
+    const expanding = !lts[0].classList.contains("expanded");
+    lts.forEach(lt=>lt.classList.toggle("expanded", expanding));
+    more.textContent = expanding ? "閉じる" : "全文を見る";
+    return;
+  }
+  const row = e.target.closest(".logrow.hasdetail");
+  if(row){
+    row.closest(".logitem").classList.toggle("open");
+  }
+});
+
+document.getElementById("prevBtn").addEventListener("click",()=>{ page--; renderList(); window.scrollTo({top:0}); });
+document.getElementById("nextBtn").addEventListener("click",()=>{ page++; renderList(); window.scrollTo({top:0}); });
+document.getElementById("applyBtn").addEventListener("click",()=>{
+  applyFilter();
+  document.querySelector("details.filters").open = false;
+});
+fromSel.addEventListener("change", applyFilter);
+toSel.addEventListener("change", applyFilter);
+
+applyFilter();
+</script>
+<script src="assets/nav.js"></script>
+<script>
+TomatoNav.init({ current:'logs.html', title:'管理モード ─ 操作ログ' });
+</script>
+</body>
+</html>
